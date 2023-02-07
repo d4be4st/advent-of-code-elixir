@@ -1,0 +1,168 @@
+# Day 08
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def build_grid(input) do
+    input
+    |> String.split("\n")
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {line, y}, grid ->
+      line
+      |> String.graphemes()
+      |> Enum.with_index()
+      |> Enum.reduce(grid, fn {char, x}, grid ->
+        Map.put(grid, {x, y}, {String.to_integer(char), false})
+      end)
+    end)
+  end
+end
+
+grid =
+  input
+  |> Kino.Input.read()
+  |> Utils.build_grid()
+
+{maxx, maxy} = grid |> Map.keys() |> Enum.max()
+```
+
+## Part 01
+
+```elixir
+defmodule Part1 do
+  def mark_all_visible(grid, :south, maxx, maxy) do
+    Enum.reduce(0..maxx, grid, fn x, grid ->
+      Enum.reduce(0..maxy, {grid, -1}, fn y, {grid, max} ->
+        mark_visible({x, y}, grid, max)
+      end)
+      |> Kernel.elem(0)
+    end)
+  end
+
+  def mark_all_visible(grid, :north, maxx, maxy) do
+    Enum.reduce(0..maxx, grid, fn x, grid ->
+      Enum.reduce(maxy..0, {grid, -1}, fn y, {grid, max} ->
+        mark_visible({x, y}, grid, max)
+      end)
+      |> Kernel.elem(0)
+    end)
+  end
+
+  def mark_all_visible(grid, :east, maxx, maxy) do
+    Enum.reduce(0..maxy, grid, fn y, grid ->
+      Enum.reduce(0..maxx, {grid, -1}, fn x, {grid, max} ->
+        mark_visible({x, y}, grid, max)
+      end)
+      |> Kernel.elem(0)
+    end)
+  end
+
+  def mark_all_visible(grid, :west, maxx, maxy) do
+    Enum.reduce(0..maxy, grid, fn y, grid ->
+      Enum.reduce(maxx..0, {grid, -1}, fn x, {grid, max} ->
+        mark_visible({x, y}, grid, max)
+      end)
+      |> Kernel.elem(0)
+    end)
+  end
+
+  def mark_visible(coord, grid, max) do
+    {value, _visible} = Map.get(grid, coord)
+
+    if value > max do
+      {Map.update!(grid, coord, fn {value, _} -> {value, true} end), value}
+    else
+      {grid, max}
+    end
+  end
+end
+```
+
+```elixir
+grid
+|> Part1.mark_all_visible(:south, maxx, maxy)
+|> Part1.mark_all_visible(:north, maxx, maxy)
+|> Part1.mark_all_visible(:east, maxx, maxy)
+|> Part1.mark_all_visible(:west, maxx, maxy)
+|> Enum.filter(fn {_, {_, visible}} -> visible == true end)
+|> Enum.count()
+```
+
+## Part 02
+
+```elixir
+defmodule Part2 do
+  def count_visible({x, y}, grid, maxx, maxy) do
+    my_value = Map.get(grid, {x, y})
+
+    count_visible_direction({x, y}, :east, my_value, grid, maxx, maxy) *
+      count_visible_direction({x, y}, :west, my_value, grid, maxx, maxy) *
+      count_visible_direction({x, y}, :south, my_value, grid, maxx, maxy) *
+      count_visible_direction({x, y}, :north, my_value, grid, maxx, maxy)
+  end
+
+  def count_visible_direction({x, y}, :east, my_value, grid, maxx, _maxy) do
+    Enum.reduce_while((x + 1)..maxx, 0, fn nextx, visible ->
+      case Map.get(grid, {nextx, y}) do
+        value when value >= my_value -> {:halt, visible + 1}
+        nil -> {:halt, visible}
+        _ -> {:cont, visible + 1}
+      end
+    end)
+  end
+
+  def count_visible_direction({x, y}, :west, my_value, grid, _maxx, _maxy) do
+    Enum.reduce_while((x - 1)..0, 0, fn nextx, visible ->
+      case Map.get(grid, {nextx, y}) do
+        value when value >= my_value -> {:halt, visible + 1}
+        nil -> {:halt, visible}
+        _ -> {:cont, visible + 1}
+      end
+    end)
+  end
+
+  def count_visible_direction({x, y}, :south, my_value, grid, _maxx, maxy) do
+    Enum.reduce_while((y + 1)..maxy, 0, fn nexty, visible ->
+      case Map.get(grid, {x, nexty}) do
+        value when value >= my_value -> {:halt, visible + 1}
+        nil -> {:halt, visible}
+        _ -> {:cont, visible + 1}
+      end
+    end)
+  end
+
+  def count_visible_direction({x, y}, :north, my_value, grid, _maxx, _maxy) do
+    Enum.reduce_while((y - 1)..0, 0, fn nexty, visible ->
+      case Map.get(grid, {x, nexty}) do
+        value when value >= my_value -> {:halt, visible + 1}
+        nil -> {:halt, visible}
+        _ -> {:cont, visible + 1}
+      end
+    end)
+  end
+end
+```
+
+```elixir
+grid
+|> Map.keys()
+|> Enum.map(fn coord ->
+  Part2.count_visible(coord, grid, maxx, maxy)
+end)
+|> Enum.max()
+```

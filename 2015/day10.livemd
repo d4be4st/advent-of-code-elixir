@@ -1,0 +1,53 @@
+# Day 10
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+conways = fn string ->
+  string
+  |> String.graphemes()
+  |> Enum.chunk_by(fn x -> x end)
+  |> Enum.map(fn group ->
+    count = Enum.count(group)
+    x = List.first(group)
+    Integer.to_string(count) <> x
+  end)
+  |> Enum.join()
+end
+```
+
+## Part 01
+
+```elixir
+input = Kino.Input.read(input)
+
+1..40
+|> Enum.reduce(input, fn _, string ->
+  conways.(string)
+end)
+|> String.length()
+```
+
+## Part 02
+
+```elixir
+1..50
+|> Enum.reduce(input, fn _, string ->
+  conways.(string)
+end)
+|> String.length()
+```

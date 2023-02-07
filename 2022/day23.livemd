@@ -1,0 +1,177 @@
+# Day 23
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(input) do
+    input
+    |> String.split("\n")
+    |> Enum.with_index()
+    |> Enum.reduce(MapSet.new(), fn {line, y}, grid ->
+      line
+      |> String.graphemes()
+      |> Enum.with_index()
+      |> Enum.reduce(grid, fn {char, x}, grid ->
+        if char == "#" do
+          MapSet.put(grid, {x, y})
+        else
+          grid
+        end
+      end)
+    end)
+  end
+
+  def run(grid, rounds) do
+    process(grid, [:north, :south, :west, :east], rounds)
+    |> sum_empty
+  end
+
+  def run2(grid) do
+    process2(grid, [:north, :south, :west, :east], 0)
+  end
+
+  def process2(grid, [direction | rest] = directions, rounds) do
+    new_grid =
+      grid
+      |> propose(directions)
+      |> move
+
+    if new_grid == grid do
+      rounds + 1
+    else
+      process2(new_grid, rest ++ [direction], rounds + 1)
+    end
+  end
+
+  def process(grid, _, 0), do: grid
+
+  def process(grid, [direction | rest] = directions, rounds) do
+    grid
+    |> propose(directions)
+    |> move
+    # |> draw
+    |> process(rest ++ [direction], rounds - 1)
+  end
+
+  def propose(grid, directions) do
+    grid
+    |> Enum.reduce(%{}, fn {x, y}, new_grid ->
+      adjacent = [
+        # NW, N, NE, W, E, SW, S, SE
+        MapSet.member?(grid, {x - 1, y - 1}),
+        MapSet.member?(grid, {x, y - 1}),
+        MapSet.member?(grid, {x + 1, y - 1}),
+        MapSet.member?(grid, {x - 1, y}),
+        MapSet.member?(grid, {x + 1, y}),
+        MapSet.member?(grid, {x - 1, y + 1}),
+        MapSet.member?(grid, {x, y + 1}),
+        MapSet.member?(grid, {x + 1, y + 1})
+      ]
+
+      if Enum.all?(adjacent, &(&1 == false)) do
+        Map.update(new_grid, {x, y}, [{x, y}], &[{x, y} | &1])
+      else
+        next_move(directions, {x, y}, adjacent, new_grid)
+      end
+    end)
+  end
+
+  def next_move([], {x, y}, _, grid), do: Map.update(grid, {x, y}, [{x, y}], &[{x, y} | &1])
+
+  def next_move([direction | directions], {x, y}, adjacent, grid) do
+    case {direction, adjacent} do
+      {:north, [false, false, false, _, _, _, _, _]} ->
+        Map.update(grid, {x, y - 1}, [{x, y}], &[{x, y} | &1])
+
+      {:south, [_, _, _, _, _, false, false, false]} ->
+        Map.update(grid, {x, y + 1}, [{x, y}], &[{x, y} | &1])
+
+      {:west, [false, _, _, false, _, false, _, _]} ->
+        Map.update(grid, {x - 1, y}, [{x, y}], &[{x, y} | &1])
+
+      {:east, [_, _, false, _, false, _, _, false]} ->
+        Map.update(grid, {x + 1, y}, [{x, y}], &[{x, y} | &1])
+
+      _ ->
+        next_move(directions, {x, y}, adjacent, grid)
+    end
+  end
+
+  def move(grid) do
+    grid
+    |> Enum.reduce(MapSet.new(), fn {new_coord, old_coords}, new_grid ->
+      if Enum.count(old_coords) == 1 do
+        MapSet.put(new_grid, new_coord)
+      else
+        MapSet.union(new_grid, MapSet.new(old_coords))
+      end
+    end)
+  end
+
+  def sum_empty(grid) do
+    {{minx, _}, {maxx, _}} = Enum.min_max_by(grid, fn {x, _y} -> x end)
+    {{_, miny}, {_, maxy}} = Enum.min_max_by(grid, fn {_x, y} -> y end)
+
+    Range.size(minx..maxx) * Range.size(miny..maxy) - MapSet.size(grid)
+  end
+
+  def draw(grid) do
+    {{minx, _}, {maxx, _}} = Enum.min_max_by(grid, fn {x, _y} -> x end)
+    {{_, miny}, {_, maxy}} = Enum.min_max_by(grid, fn {_x, y} -> y end)
+
+    Enum.each(miny..maxy, fn y ->
+      Enum.each(minx..maxx, fn x ->
+        if MapSet.member?(grid, {x, y}), do: IO.write("#"), else: IO.write(".")
+      end)
+
+      IO.write("\n")
+    end)
+
+    IO.write("\n")
+    grid
+  end
+end
+
+"....#..
+..###.#
+#...#.#
+.#...##
+#.###..
+##.#.##
+.#..#.."
+|> Utils.parse()
+|> Utils.run2()
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Utils.run(10)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Utils.run2()
+```

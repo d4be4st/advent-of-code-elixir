@@ -1,0 +1,110 @@
+# Day 12
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(lines) do
+    lines
+    |> Enum.with_index()
+    |> Enum.reduce({%{}, nil, nil}, fn {line, column}, {grid, start, stop} ->
+      line
+      |> String.to_charlist()
+      |> Enum.with_index()
+      |> Enum.reduce({grid, start, stop}, fn {char, row}, {grid, start, stop} ->
+        case char do
+          ?S -> {Map.put(grid, {row, column}, ?a - ?a), {row, column}, stop}
+          ?E -> {Map.put(grid, {row, column}, ?z - ?a), start, {row, column}}
+          _ -> {Map.put(grid, {row, column}, char - ?a), start, stop}
+        end
+      end)
+    end)
+  end
+
+  def path(queue, grid, stop, traversed) do
+    case :queue.out(queue) do
+      {{:value, {{node, height}, steps}}, queue} ->
+        cond do
+          node == stop ->
+            steps
+
+          MapSet.member?(traversed, node) ->
+            path(queue, grid, stop, traversed)
+
+          true ->
+            traversed = MapSet.put(traversed, node)
+
+            next_nodes(grid, node, height)
+            |> Enum.filter(fn {node, _} -> !MapSet.member?(traversed, node) end)
+            |> Enum.reduce(queue, fn next, queue -> :queue.in({next, steps + 1}, queue) end)
+            |> path(grid, stop, traversed)
+        end
+
+      {:empty, _} ->
+        :infinity
+    end
+  end
+
+  def next_nodes(grid, {x, y}, height) do
+    [
+      valid(grid, x - 1, y, height),
+      valid(grid, x + 1, y, height),
+      valid(grid, x, y - 1, height),
+      valid(grid, x, y + 1, height)
+    ]
+    |> Enum.filter(&(&1 != false))
+  end
+
+  def valid(grid, x, y, height) do
+    Map.get(grid, {x, y}, :infinity) <= height + 1 && {{x, y}, Map.get(grid, {x, y})}
+  end
+end
+
+# {grid, start, stop} =
+# "Sabqponm
+# abcryxxl
+# accszExk
+# acctuvwj
+# abdefghi"
+#   |> String.split("\n")
+#   |> Utils.parse()
+
+# Utils.path(:queue.from_list([{{start, 0}, 0}]), grid, stop, MapSet.new)
+
+{grid, start, stop} =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Utils.parse()
+```
+
+## Part 01
+
+```elixir
+Utils.path(:queue.from_list([{{start, 0}, 0}]), grid, stop, MapSet.new())
+```
+
+## Part 02
+
+```elixir
+grid
+|> Enum.filter(fn {_, h} -> h == 0 end)
+|> Enum.map(fn {node, height} ->
+  Utils.path(:queue.from_list([{{node, height}, 0}]), grid, stop, MapSet.new())
+end)
+|> Enum.min()
+```

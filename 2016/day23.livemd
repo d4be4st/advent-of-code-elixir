@@ -1,0 +1,118 @@
+# Day 23
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Computer do
+  def run(registers, address, instructions) do
+    IO.inspect({address, Enum.at(instructions, address), registers})
+
+    case process(registers, address, Enum.at(instructions, address)) do
+      {:halt, return} ->
+        return
+
+      {:toggle, offset} ->
+        instructions = toggle(instructions, address + offset)
+        run(registers, address + 1, instructions)
+
+      {registers, address} ->
+        run(registers, address, instructions)
+    end
+  end
+
+  def process(registers, _address, nil), do: {:halt, registers}
+
+  def process(registers, address, instruction) do
+    case String.split(instruction, " ") do
+      ["cpy", x, y] when x >= "a" and x <= "d" ->
+        {Map.put(registers, y, Map.get(registers, x)), address + 1}
+
+      ["cpy", x, y] ->
+        {Map.put(registers, y, String.to_integer(x)), address + 1}
+
+      ["inc", x] ->
+        {Map.update!(registers, x, &(&1 + 1)), address + 1}
+
+      ["dec", x] ->
+        {Map.update!(registers, x, &(&1 - 1)), address + 1}
+
+      ["jnz", x, y] when y >= "a" and y <= "d" ->
+        if Map.get(registers, x) == 0 do
+          {registers, address + 1}
+        else
+          {registers, address + Map.get(registers, y)}
+        end
+
+      ["jnz", x, y] ->
+        if Map.get(registers, x) == 0 do
+          {registers, address + 1}
+        else
+          {registers, address + String.to_integer(y)}
+        end
+
+      ["tgl", x] ->
+        {:toggle, Map.get(registers, x)}
+    end
+  end
+
+  def toggle(instructions, address) do
+    case Enum.at(instructions, address, "") |> String.split(" ") do
+      ["cpy", x, y] ->
+        List.replace_at(instructions, address, "jnz #{x} #{y}")
+
+      ["inc", x] ->
+        List.replace_at(instructions, address, "dec " <> x)
+
+      ["dec", x] ->
+        List.replace_at(instructions, address, "inc " <> x)
+
+      ["jnz", x, y] ->
+        List.replace_at(instructions, address, "cpy #{x} #{y}")
+
+      ["tgl", x] ->
+        List.replace_at(instructions, address, "inc " <> x)
+
+      _ ->
+        instructions
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+
+registers = %{"a" => 7, "b" => 0, "c" => 0, "d" => 0}
+Computer.run(registers, 0, instructions)
+```
+
+## Part 02
+
+```elixir
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+
+registers = %{"a" => 12, "b" => 0, "c" => 0, "d" => 0}
+Computer.run(registers, 0, instructions)
+```

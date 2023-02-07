@@ -1,0 +1,121 @@
+# Day 09
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def run(instructions, number_of_tails) do
+    tails = for _ <- 1..number_of_tails, do: {0, 0}
+    move(instructions, {0, 0}, tails, MapSet.new())
+  end
+
+  def move([], _, _, visited), do: visited
+
+  def move([instruction | instructions], head, tails, visited) do
+    [direction, times] =
+      instruction
+      |> String.split(" ")
+
+    times = String.to_integer(times)
+
+    {head, tails, visited} = move_head(direction, times, head, tails, visited)
+
+    move(instructions, head, tails, visited)
+  end
+
+  def move_head(_, 0, head, tails, visited), do: {head, tails, visited}
+
+  def move_head(direction, times, head, tails, visited) do
+    head = move_direction(direction, head)
+
+    {tails, _} =
+      Enum.reduce(tails, {[], head}, fn old_tail, {tails, head} ->
+        tail =
+          if touching?(head, old_tail) do
+            old_tail
+          else
+            move_tail(head, old_tail)
+          end
+
+        {[tail | tails], tail}
+      end)
+
+    visited = MapSet.put(visited, List.first(tails))
+    tails = Enum.reverse(tails)
+    move_head(direction, times - 1, head, tails, visited)
+  end
+
+  def move_tail({hx, hy}, {tx, ty}) do
+    cond do
+      hx < tx && hy < ty -> {tx - 1, ty - 1}
+      hx < tx && hy == ty -> {tx - 1, ty}
+      hx < tx && hy > ty -> {tx - 1, ty + 1}
+      hx == tx && hy < ty -> {tx, ty - 1}
+      hx == tx && hy > ty -> {tx, ty + 1}
+      hx > tx && hy < ty -> {tx + 1, ty - 1}
+      hx > tx && hy == ty -> {tx + 1, ty}
+      hx > tx && hy > ty -> {tx + 1, ty + 1}
+    end
+  end
+
+  def move_direction("R", {x, y}), do: {x + 1, y}
+  def move_direction("L", {x, y}), do: {x - 1, y}
+  def move_direction("U", {x, y}), do: {x, y - 1}
+  def move_direction("D", {x, y}), do: {x, y + 1}
+
+  def touching?({hx, hy}, {tx, ty}) do
+    tx >= hx - 1 && tx <= hx + 1 && ty >= hy - 1 && ty <= hy + 1
+  end
+
+  def display(head, old_tail, tail) do
+    {{minx, miny}, {maxx, maxy}} = Enum.min_max([head, old_tail, tail])
+
+    Enum.map((miny - 2)..(maxy + 2), fn y ->
+      Enum.map((minx - 2)..(maxx + 2), fn x ->
+        case {x, y} do
+          ^head -> IO.write("H")
+          ^old_tail -> IO.write("O")
+          ^tail -> IO.write("T")
+          _ -> IO.write(".")
+        end
+      end)
+
+      IO.write("\n")
+    end)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Utils.run(1)
+|> Enum.count()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Utils.run(9)
+|> Enum.count()
+```

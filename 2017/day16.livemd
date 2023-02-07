@@ -1,0 +1,105 @@
+# Day 16
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def find_cycle(_, list, count) when list == 'abcdefghijklmnop' and count != 0, do: count
+
+  def find_cycle(instructions, list, count) do
+    list = process(instructions, list)
+    find_cycle(instructions, list, count + 1)
+  end
+
+  def part2(_, list, 0), do: list
+
+  def part2(instructions, list, count) do
+    list = process(instructions, list)
+    part2(instructions, list, count - 1)
+  end
+
+  def process([], list), do: list
+
+  def process([instruction | instructions], list) do
+    list =
+      case String.split_at(instruction, 1) do
+        {"s", times} ->
+          rotate(list, String.to_integer(times))
+
+        {"x", operators} ->
+          exchange(list, String.split(operators, "/") |> Enum.map(&String.to_integer/1))
+
+        {"p", operators} ->
+          partner(list, String.split(operators, "/") |> Enum.map(&String.to_charlist/1))
+      end
+
+    process(instructions, list)
+  end
+
+  def rotate(list, index) do
+    {l, r} = Enum.split(list, Enum.count(list) - index)
+    r ++ l
+  end
+
+  def exchange(list, [left_index, right_index]) do
+    left_value = Enum.at(list, left_index)
+    right_value = Enum.at(list, right_index)
+
+    list
+    |> List.replace_at(left_index, right_value)
+    |> List.replace_at(right_index, left_value)
+  end
+
+  def partner(list, [[left_value], [right_value]]) do
+    left_index = Enum.find_index(list, &(&1 == left_value))
+    right_index = Enum.find_index(list, &(&1 == right_value))
+
+    list
+    |> List.replace_at(left_index, right_value)
+    |> List.replace_at(right_index, left_value)
+  end
+end
+
+list = ?a..?p |> Enum.to_list()
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split(",")
+|> Utils.process(list)
+```
+
+## Part 02
+
+```elixir
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split(",")
+
+cycle_number =
+  instructions
+  |> Utils.find_cycle(list, 0)
+
+rem_count = rem(1_000_000_000, cycle_number)
+
+instructions
+|> Utils.part2(list, rem_count)
+```

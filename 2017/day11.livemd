@@ -1,0 +1,61 @@
+# Day 11
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def process(coord, [], max_distance), do: {coord, max_distance}
+
+  def process(coord, [direction | directions], max_distance) do
+    new_coord = step(coord, direction)
+    new_distance = distance(new_coord)
+
+    process(new_coord, directions, Enum.max([new_distance, max_distance]))
+  end
+
+  def step({x, y, z}, "n"), do: {x, y - 1, z + 1}
+  def step({x, y, z}, "s"), do: {x, y + 1, z - 1}
+  def step({x, y, z}, "ne"), do: {x + 1, y - 1, z}
+  def step({x, y, z}, "sw"), do: {x - 1, y + 1, z}
+  def step({x, y, z}, "nw"), do: {x - 1, y, z + 1}
+  def step({x, y, z}, "se"), do: {x + 1, y, z - 1}
+
+  def distance({x, y, z}) do
+    div(abs(x) + abs(y) + abs(z), 2)
+  end
+end
+
+directions =
+  input
+  |> Kino.Input.read()
+  |> String.split(",")
+```
+
+## Part 01
+
+```elixir
+Utils.process({0, 0, 0}, directions, 0)
+|> Kernel.elem(0)
+|> Utils.distance()
+```
+
+## Part 02
+
+```elixir
+Utils.process({0, 0, 0}, directions, 0)
+|> Kernel.elem(1)
+```

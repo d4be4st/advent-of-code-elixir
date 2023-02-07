@@ -1,0 +1,106 @@
+# Day 13
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"},
+  {:jason, "~> 1.4"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Part1 do
+  def parse(input) do
+    input
+    |> String.split("\n\n")
+    |> Enum.map(fn lines ->
+      lines
+      |> String.split("\n")
+      |> Enum.map(fn line ->
+        Jason.decode!(line)
+      end)
+    end)
+  end
+
+  def run(pairs) do
+    pairs
+    |> Enum.with_index(1)
+    |> Enum.map(fn {[left, right], index} ->
+      {Utils.compare(left, right), index}
+    end)
+  end
+end
+
+defmodule Part2 do
+  def parse(input) do
+    input
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn line ->
+      Jason.decode!(line)
+    end)
+    |> Kernel.++([[[2]], [[6]]])
+  end
+
+  def run(list) do
+    Enum.sort(list, &(Utils.compare(&1, &2) == :lower))
+  end
+end
+
+defmodule Utils do
+  def compare(left, right) when is_integer(left) and is_integer(right) do
+    cond do
+      left < right -> :lower
+      left == right -> :equal
+      left > right -> :higher
+    end
+  end
+
+  def compare(left, right) when is_list(left) and is_integer(right), do: compare(left, [right])
+  def compare(left, right) when is_integer(left) and is_list(right), do: compare([left], right)
+
+  def compare([left | rest_left], [right | rest_right]) do
+    case compare(left, right) do
+      :lower -> :lower
+      :equal -> compare(rest_left, rest_right)
+      :higher -> :higher
+    end
+  end
+
+  def compare([], []), do: :equal
+  def compare([], _), do: :lower
+  def compare(_, []), do: :higher
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> Part1.parse()
+|> Part1.run()
+|> Enum.filter(fn {compared, _index} -> compared == :lower end)
+|> Enum.map(&elem(&1, 1))
+|> Enum.sum()
+```
+
+## Part 02
+
+```elixir
+list =
+  input
+  |> Kino.Input.read()
+  |> Part2.parse()
+  |> Part2.run()
+
+(Enum.find_index(list, &(&1 == [[2]])) + 1) * (Enum.find_index(list, &(&1 == [[6]])) + 1)
+```

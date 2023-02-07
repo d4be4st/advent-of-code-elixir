@@ -1,0 +1,84 @@
+# Day 12
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Tree do
+  def build(nodes) do
+    nodes
+    |> Enum.reduce(%{}, fn line, tree ->
+      line
+      |> String.split(" <-> ")
+      |> add_node(tree)
+    end)
+  end
+
+  def add_node([name, children], tree) do
+    children = String.split(children, ", ")
+
+    Map.put(tree, name, children |> Enum.filter(&(&1 != name)))
+  end
+
+  def find_nodes({[], []}, _, seen), do: seen
+
+  def find_nodes(queue, tree, seen) do
+    {{:value, node}, queue} = :queue.out(queue)
+
+    cond do
+      MapSet.member?(seen, node) ->
+        find_nodes(queue, tree, seen)
+
+      true ->
+        seen = MapSet.put(seen, node)
+
+        Map.get(tree, node)
+        |> Enum.reduce(queue, fn child, queue -> :queue.in(child, queue) end)
+        |> find_nodes(tree, seen)
+    end
+  end
+
+  def find_groups(tree, groups_count) when map_size(tree) == 0, do: groups_count
+
+  def find_groups(tree, groups_count) do
+    {node, _} = tree |> Map.to_list() |> List.first()
+    group = find_nodes(:queue.from_list([node]), tree, MapSet.new())
+
+    tree
+    |> Map.filter(fn {node, _} -> !MapSet.member?(group, node) end)
+    |> find_groups(groups_count + 1)
+  end
+end
+
+tree =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Tree.build()
+```
+
+## Part 01
+
+```elixir
+Tree.find_nodes(:queue.from_list(["0"]), tree, MapSet.new())
+|> Enum.count()
+```
+
+## Part 02
+
+```elixir
+Tree.find_groups(tree, 0)
+```

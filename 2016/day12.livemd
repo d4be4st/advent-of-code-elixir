@@ -1,0 +1,77 @@
+# Day 12
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Computer do
+  def run(registers, address, instructions) do
+    case process(registers, address, Enum.at(instructions, address)) do
+      {:halt, return} -> return
+      {registers, address} -> run(registers, address, instructions)
+    end
+  end
+
+  def process(registers, _address, nil), do: {:halt, registers}
+
+  def process(registers, address, instruction) do
+    case String.split(instruction, " ") do
+      ["cpy", x, y] when x >= "a" and x <= "d" ->
+        {Map.put(registers, y, Map.get(registers, x)), address + 1}
+
+      ["cpy", x, y] ->
+        {Map.put(registers, y, String.to_integer(x)), address + 1}
+
+      ["inc", x] ->
+        {Map.update!(registers, x, &(&1 + 1)), address + 1}
+
+      ["dec", x] ->
+        {Map.update!(registers, x, &(&1 - 1)), address + 1}
+
+      ["jnz", x, y] ->
+        if Map.get(registers, x) == 0 do
+          {registers, address + 1}
+        else
+          {registers, address + String.to_integer(y)}
+        end
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+
+registers = %{"a" => 0, "b" => 0, "c" => 0, "d" => 0}
+Computer.run(registers, 0, instructions)
+```
+
+## Part 02
+
+```elixir
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+
+registers = %{"a" => 0, "b" => 0, "c" => 1, "d" => 0}
+Computer.run(registers, 0, instructions)
+```

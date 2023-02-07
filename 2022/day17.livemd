@@ -1,0 +1,471 @@
+# Day 17
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Tetris do
+  def run(input, blocks_count) do
+    wind = String.graphemes(input)
+    move_block(:hline, {2, 3}, :queue.from_list(wind), blocks_count, %{maxy: 0})
+  end
+
+  def move_block(_, _, _, 0, grid) do
+    grid
+  end
+
+  def move_block(type, coord, wind, blocks_count, grid) do
+    if rem(blocks_count, 1000), do: IO.inspect(blocks_count)
+    {{:value, direction}, wind} = :queue.out(wind)
+    wind = :queue.in(direction, wind)
+
+    # if grid[:maxy] > 120, do: IO.inspect({direction, coord, type})
+    coord =
+      case direction do
+        "<" -> move_left(type, coord, grid)
+        ">" -> move_right(type, coord, grid)
+      end
+
+    case move_down(type, coord, grid) do
+      {:cont, coord, grid} ->
+        move_block(type, coord, wind, blocks_count, grid)
+
+      {:halt, coord, grid} ->
+        grid = settle(type, coord, grid)
+        # if grid[:maxy] > 120, do: draw(grid)
+        drop_next_block(type, wind, blocks_count, grid)
+    end
+  end
+
+  def drop_next_block(:hline, wind, blocks_count, %{maxy: height} = grid) do
+    move_block(:plus, {2, height + 5}, wind, blocks_count - 1, grid)
+  end
+
+  def drop_next_block(:plus, wind, blocks_count, %{maxy: height} = grid) do
+    move_block(:lshape, {2, height + 4}, wind, blocks_count - 1, grid)
+  end
+
+  def drop_next_block(:lshape, wind, blocks_count, %{maxy: height} = grid) do
+    move_block(:vline, {2, height + 4}, wind, blocks_count - 1, grid)
+  end
+
+  def drop_next_block(:vline, wind, blocks_count, %{maxy: height} = grid) do
+    move_block(:square, {2, height + 4}, wind, blocks_count - 1, grid)
+  end
+
+  def drop_next_block(:square, wind, blocks_count, %{maxy: height} = grid) do
+    move_block(:hline, {2, height + 4}, wind, blocks_count - 1, grid)
+  end
+
+  def move_down(:hline, {x, y}, grid) do
+    cond do
+      y - 1 < 0 -> {:halt, {x, y}, grid}
+      Map.get(grid, {x, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      Map.get(grid, {x + 1, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      Map.get(grid, {x + 2, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      Map.get(grid, {x + 3, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      true -> {:cont, {x, y - 1}, grid}
+    end
+  end
+
+  def move_down(:plus, {x, y}, grid) do
+    cond do
+      y - 2 < 0 -> {:halt, {x, y}, grid}
+      Map.get(grid, {x, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      Map.get(grid, {x + 1, y - 2}, nil) != nil -> {:halt, {x, y}, grid}
+      Map.get(grid, {x + 2, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      true -> {:cont, {x, y - 1}, grid}
+    end
+  end
+
+  def move_down(:lshape, {x, y}, grid) do
+    cond do
+      y - 1 < 0 -> {:halt, {x, y}, grid}
+      Map.get(grid, {x, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      Map.get(grid, {x + 1, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      Map.get(grid, {x + 2, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      true -> {:cont, {x, y - 1}, grid}
+    end
+  end
+
+  def move_down(:vline, {x, y}, grid) do
+    cond do
+      y - 1 < 0 -> {:halt, {x, y}, grid}
+      Map.get(grid, {x, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      true -> {:cont, {x, y - 1}, grid}
+    end
+  end
+
+  def move_down(:square, {x, y}, grid) do
+    cond do
+      y - 1 < 0 -> {:halt, {x, y}, grid}
+      Map.get(grid, {x, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      Map.get(grid, {x + 1, y - 1}, nil) != nil -> {:halt, {x, y}, grid}
+      true -> {:cont, {x, y - 1}, grid}
+    end
+  end
+
+  def settle(:hline, {x, y}, grid = %{maxy: maxy}) do
+    grid
+    |> Map.put({x, y}, :hline)
+    |> Map.put({x + 1, y}, :hline)
+    |> Map.put({x + 2, y}, :hline)
+    |> Map.put({x + 3, y}, :hline)
+    |> Map.put(:maxy, max(maxy, y))
+  end
+
+  def settle(:plus, {x, y}, grid = %{maxy: maxy}) do
+    grid
+    |> Map.put({x, y}, :plus)
+    |> Map.put({x + 1, y}, :plus)
+    |> Map.put({x + 1, y + 1}, :plus)
+    |> Map.put({x + 1, y - 1}, :plus)
+    |> Map.put({x + 2, y}, :plus)
+    |> Map.put(:maxy, max(maxy, y + 1))
+  end
+
+  def settle(:lshape, {x, y}, grid = %{maxy: maxy}) do
+    grid
+    |> Map.put({x, y}, :lshape)
+    |> Map.put({x + 1, y}, :lshape)
+    |> Map.put({x + 2, y}, :lshape)
+    |> Map.put({x + 2, y + 1}, :lshape)
+    |> Map.put({x + 2, y + 2}, :lshape)
+    |> Map.put(:maxy, max(maxy, y + 2))
+  end
+
+  def settle(:vline, {x, y}, grid = %{maxy: maxy}) do
+    grid
+    |> Map.put({x, y}, :vline)
+    |> Map.put({x, y + 1}, :vline)
+    |> Map.put({x, y + 2}, :vline)
+    |> Map.put({x, y + 3}, :vline)
+    |> Map.put(:maxy, max(maxy, y + 3))
+  end
+
+  def settle(:square, {x, y}, grid = %{maxy: maxy}) do
+    grid
+    |> Map.put({x, y}, :square)
+    |> Map.put({x + 1, y}, :square)
+    |> Map.put({x, y + 1}, :square)
+    |> Map.put({x + 1, y + 1}, :square)
+    |> Map.put(:maxy, max(maxy, y + 1))
+  end
+
+  def move_left(:hline, {x, y}, grid) do
+    cond do
+      x - 1 < 0 -> {x, y}
+      Map.get(grid, {x - 1, y}, nil) != nil -> {x, y}
+      true -> {x - 1, y}
+    end
+  end
+
+  def move_left(:plus, {x, y}, grid) do
+    cond do
+      x - 1 < 0 -> {x, y}
+      Map.get(grid, {x - 1, y}, nil) != nil -> {x, y}
+      Map.get(grid, {x, y - 1}, nil) != nil -> {x, y}
+      true -> {x - 1, y}
+    end
+  end
+
+  def move_left(:lshape, {x, y}, grid) do
+    cond do
+      x - 1 < 0 -> {x, y}
+      Map.get(grid, {x - 1, y}, nil) != nil -> {x, y}
+      true -> {x - 1, y}
+    end
+  end
+
+  def move_left(:vline, {x, y}, grid) do
+    cond do
+      x - 1 < 0 -> {x, y}
+      Map.get(grid, {x - 1, y}, nil) != nil -> {x, y}
+      Map.get(grid, {x - 1, y + 1}, nil) != nil -> {x, y}
+      Map.get(grid, {x - 1, y + 2}, nil) != nil -> {x, y}
+      Map.get(grid, {x - 1, y + 3}, nil) != nil -> {x, y}
+      true -> {x - 1, y}
+    end
+  end
+
+  def move_left(:square, {x, y}, grid) do
+    cond do
+      x - 1 < 0 -> {x, y}
+      Map.get(grid, {x - 1, y}, nil) != nil -> {x, y}
+      Map.get(grid, {x - 1, y + 1}, nil) != nil -> {x, y}
+      true -> {x - 1, y}
+    end
+  end
+
+  def move_right(:hline, {x, y}, grid) do
+    cond do
+      x + 4 == 7 -> {x, y}
+      Map.get(grid, {x + 4, y}, nil) != nil -> {x, y}
+      true -> {x + 1, y}
+    end
+  end
+
+  def move_right(:plus, {x, y}, grid) do
+    cond do
+      x + 3 == 7 -> {x, y}
+      Map.get(grid, {x + 3, y}, nil) != nil -> {x, y}
+      Map.get(grid, {x + 2, y - 1}, nil) != nil -> {x, y}
+      true -> {x + 1, y}
+    end
+  end
+
+  def move_right(:lshape, {x, y}, grid) do
+    cond do
+      x + 3 == 7 -> {x, y}
+      Map.get(grid, {x + 3, y}, nil) != nil -> {x, y}
+      Map.get(grid, {x + 3, y + 1}, nil) != nil -> {x, y}
+      Map.get(grid, {x + 3, y + 2}, nil) != nil -> {x, y}
+      true -> {x + 1, y}
+    end
+  end
+
+  def move_right(:vline, {x, y}, grid) do
+    cond do
+      x + 1 == 7 -> {x, y}
+      Map.get(grid, {x + 1, y}, nil) != nil -> {x, y}
+      Map.get(grid, {x + 1, y + 1}, nil) != nil -> {x, y}
+      Map.get(grid, {x + 1, y + 2}, nil) != nil -> {x, y}
+      Map.get(grid, {x + 1, y + 3}, nil) != nil -> {x, y}
+      true -> {x + 1, y}
+    end
+  end
+
+  def move_right(:square, {x, y}, grid) do
+    cond do
+      x + 2 == 7 -> {x, y}
+      Map.get(grid, {x + 2, y}, nil) != nil -> {x, y}
+      Map.get(grid, {x + 2, y + 1}, nil) != nil -> {x, y}
+      true -> {x + 1, y}
+    end
+  end
+
+  def draw(grid) do
+    {_, maxy} = Enum.max_by(Map.keys(grid) |> List.delete(:maxy), &elem(&1, 1))
+
+    Enum.each(maxy..(maxy - 10), fn y ->
+      Enum.each(0..6, fn x ->
+        if Map.get(grid, {x, y}) != nil, do: IO.write("#"), else: IO.write(".")
+      end)
+
+      IO.write("\n")
+    end)
+  end
+end
+
+">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>"
+# input
+# |> Kino.Input.read
+|> Tetris.run(1_000_000_000_000)
+# |> Tetris.draw
+|> Map.get(:maxy)
+|> Kernel.+(1)
+```
+
+## Part 01
+
+```elixir
+defmodule Day17 do
+  require Logger
+
+  defstruct dropped_pieces: MapSet.new([]),
+            max_y: 0,
+            to_drop: 2022,
+            dropped: 0,
+            cursor_to_idx: %{}
+
+  def solve1(input, to_drop) do
+    winds = input |> String.to_charlist()
+
+    pieces = [
+      [{2, 4}, {3, 4}, {4, 4}, {5, 4}],
+      [{3, 6}, {2, 5}, {3, 5}, {4, 5}, {3, 4}],
+      [{4, 6}, {4, 5}, {4, 4}, {3, 4}, {2, 4}],
+      [{2, 7}, {2, 6}, {2, 5}, {2, 4}],
+      [{2, 5}, {3, 5}, {2, 4}, {3, 4}]
+    ]
+
+    run(%__MODULE__{to_drop: to_drop}, pieces, pieces, winds, winds)
+    # |> Map.get(:max_y)
+  end
+
+  # def solve2(suffix \\ "") do
+  #   winds = Input.get_lines(17, suffix) |> hd |> String.to_charlist()
+
+  #   pieces = [
+  #     [{2, 4}, {3, 4}, {4, 4}, {5, 4}],
+  #     [{3, 6}, {2, 5}, {3, 5}, {4, 5}, {3, 4}],
+  #     [{4, 6}, {4, 5}, {4, 4}, {3, 4}, {2, 4}],
+  #     [{2, 7}, {2, 6}, {2, 5}, {2, 4}],
+  #     [{2, 5}, {3, 5}, {2, 4}, {3, 4}]
+  #   ]
+
+  #   {{first_occurrence, first_max_y}, second_occurrence, second_max_y, p, dp, new_pieces,
+  #    new_winds} = run(%__MODULE__{to_drop: -1000, dropped: 0}, pieces, pieces, winds, winds)
+
+  #   period = second_occurrence - first_occurrence
+  #   iters = div(1_000_000_000_000 - first_occurrence, period)
+  #   to_go = rem(1_000_000_000_000 - first_occurrence, period)
+
+  #   Logger.warn(
+  #     "Found a cycle! #{inspect({first_occurrence, first_max_y, second_occurrence, second_max_y, iters, to_go, p, dp})}"
+  #   )
+
+  #   %{max_y: result} =
+  #     run(
+  #       %__MODULE__{
+  #         max_y: iters * (second_max_y - first_max_y) + first_max_y,
+  #         to_drop: to_go,
+  #         dropped_pieces: dp
+  #       },
+  #       new_pieces,
+  #       pieces,
+  #       new_winds,
+  #       winds
+  #     )
+
+  #   result
+  # end
+
+  def run(%__MODULE__{to_drop: 0} = state, _, _, _, _) do
+    state
+  end
+
+  def run(%__MODULE__{} = state, [], all_pieces, winds, all_winds) do
+    run(state, all_pieces, all_pieces, winds, all_winds)
+  end
+
+  def run(%__MODULE__{} = state, [piece | pieces], all_pieces, winds, all_winds) do
+    {winds, dropped_piece} = drop(piece, state.dropped_pieces, winds, all_winds, state.max_y)
+
+    {_, piece_max_y} = hd(dropped_piece)
+
+    {dropped_pieces, new_max_y} =
+      merge_pieces(state.dropped_pieces, dropped_piece, state.max_y, piece_max_y)
+
+    if Map.has_key?(state.cursor_to_idx, :erlang.phash2({pieces, winds, dropped_pieces})) and
+         state.to_drop < 0 do
+      {state.cursor_to_idx[:erlang.phash2({pieces, winds, dropped_pieces})], state.dropped + 1,
+       new_max_y, piece, dropped_pieces, pieces, winds}
+    else
+      state = %{
+        state
+        | to_drop: state.to_drop - 1,
+          dropped: state.dropped + 1,
+          dropped_pieces: dropped_pieces,
+          max_y: new_max_y,
+          cursor_to_idx:
+            Map.put(
+              state.cursor_to_idx,
+              :erlang.phash2({pieces, winds, dropped_pieces}),
+              {state.dropped + 1, new_max_y}
+            )
+      }
+
+      run(state, pieces, all_pieces, winds, all_winds)
+    end
+  end
+
+  def merge_pieces(dropped_pieces, dropped_piece, old_max_y, piece_max_y) do
+    delta = max(piece_max_y, 0)
+
+    new_pieces =
+      dropped_piece
+      |> Enum.concat(dropped_pieces)
+      |> Enum.map(fn {x, y} -> {x, y - delta} end)
+      |> Enum.filter(&(elem(&1, 1) > -100))
+      |> MapSet.new()
+
+    {new_pieces, old_max_y + delta}
+  end
+
+  def drop(piece, dropped_pieces, [], all_winds, max_y) do
+    drop(piece, dropped_pieces, all_winds, all_winds, max_y)
+  end
+
+  def drop(piece, dropped_pieces, [wind | winds], all_winds, max_y) do
+    incr =
+      case wind do
+        ?> -> {1, 0}
+        ?< -> {-1, 0}
+      end
+
+    {_did_move, piece} = move(piece, incr, dropped_pieces, max_y)
+    {did_move, piece} = move(piece, {0, -1}, dropped_pieces, max_y)
+
+    # if wind == ?>,do: IO.inspect(">"), else: IO.inspect("<")
+    # draw(elem(merge_pieces(dropped_pieces,piece,0,elem(hd(piece),1)),0))
+    if did_move do
+      drop(piece, dropped_pieces, winds, all_winds, max_y)
+    else
+      {winds, piece}
+    end
+  end
+
+  def move(piece, {dx, dy}, dropped_pieces, max_y) do
+    updated_piece = Enum.map(piece, fn {x, y} -> {x + dx, y + dy} end)
+
+    if Enum.any?(updated_piece, &(MapSet.member?(dropped_pieces, &1) or oob(&1, max_y))) do
+      {false, piece}
+    else
+      {true, updated_piece}
+    end
+  end
+
+  def oob({x, y}, max_y) do
+    y <= -max_y or x < 0 or x >= 7
+  end
+
+  def draw(dropped_pieces) do
+    {_, miny} = Enum.min_by(dropped_pieces, fn {_, y} -> y end)
+
+    Enum.each(0..10, fn y ->
+      Enum.each(0..6, fn x ->
+        if MapSet.member?(dropped_pieces, {x, -y}), do: IO.write("#"), else: IO.write(".")
+      end)
+
+      IO.write("\n")
+    end)
+  end
+end
+
+input
+|> Kino.Input.read()
+|> Day17.solve1(80)
+|> then(fn map -> map.dropped_pieces end)
+# |> Enum.filter(fn {x, y} -> y >= 0 end )
+|> Day17.draw()
+```
+
+```elixir
+input
+|> Kino.Input.read()
+|> Tetris.run(2022)
+# |> Tetris.draw
+|> Map.get(:maxy)
+|> Kernel.+(1)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

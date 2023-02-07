@@ -1,0 +1,116 @@
+# Day 18
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+steps = 100
+
+map =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.with_index()
+  |> Enum.reduce(%{}, fn {line, y}, map ->
+    line
+    |> String.graphemes()
+    |> Enum.with_index()
+    |> Enum.reduce(map, fn {char, x}, map ->
+      value = if char == "#", do: 1, else: 0
+      Map.put(map, {x, y}, value)
+    end)
+  end)
+```
+
+```elixir
+neighbours_count = fn map, {x, y} ->
+  [
+    Map.get(map, {x - 1, y - 1}, 0),
+    Map.get(map, {x - 1, y}, 0),
+    Map.get(map, {x - 1, y + 1}, 0),
+    Map.get(map, {x, y - 1}, 0),
+    Map.get(map, {x, y + 1}, 0),
+    Map.get(map, {x + 1, y - 1}, 0),
+    Map.get(map, {x + 1, y}, 0),
+    Map.get(map, {x + 1, y + 1}, 0)
+  ]
+  |> Enum.count(&(&1 == 1))
+end
+```
+
+## Part 01
+
+```elixir
+1..steps
+|> Enum.reduce(map, fn _step, map ->
+  Enum.reduce(map, %{}, fn {coord, value}, acc ->
+    count = neighbours_count.(map, coord)
+
+    new_value =
+      case value do
+        1 -> if count == 2 || count == 3, do: 1, else: 0
+        0 -> if count == 3, do: 1, else: 0
+      end
+
+    Map.put(acc, coord, new_value)
+  end)
+end)
+|> Map.values()
+|> Enum.count(&(&1 == 1))
+```
+
+## Part 02
+
+```elixir
+{{min_x, min_y}, {max_x, max_y}} = map |> Map.keys() |> Enum.min_max()
+
+map =
+  map
+  |> Map.put({min_x, min_y}, 1)
+  |> Map.put({min_x, max_y}, 1)
+  |> Map.put({max_x, min_y}, 1)
+  |> Map.put({max_x, max_x}, 1)
+
+1..steps
+|> Enum.reduce(map, fn _step, map ->
+  Enum.reduce(map, %{}, fn {coord, value}, acc ->
+    count = neighbours_count.(map, coord)
+
+    new_value =
+      case coord do
+        {^min_x, ^min_y} ->
+          1
+
+        {^min_x, ^max_y} ->
+          1
+
+        {^max_x, ^min_y} ->
+          1
+
+        {^max_x, ^max_x} ->
+          1
+
+        _ ->
+          case value do
+            1 -> if count == 2 || count == 3, do: 1, else: 0
+            0 -> if count == 3, do: 1, else: 0
+          end
+      end
+
+    Map.put(acc, coord, new_value)
+  end)
+end)
+|> Map.values()
+|> Enum.count(&(&1 == 1))
+```

@@ -1,0 +1,54 @@
+# Day 15
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def process(_, _, _, _, 0, matches), do: matches
+
+  def process(value_a, value_b, div_a, div_b, times, matches) do
+    # if rem(times, 10000) == 0, do: IO.inspect(times)
+    value_a = next_value(value_a, :a, div_a)
+    value_b = next_value(value_b, :b, div_b)
+
+    matches = if compare(value_a, value_b), do: matches + 1, else: matches
+
+    process(value_a, value_b, div_a, div_b, times - 1, matches)
+  end
+
+  def compare(value_a, value_b) do
+    mask = Bitwise.bsl(1, 16) - 1
+
+    Bitwise.bxor(
+      Bitwise.band(value_a, mask),
+      Bitwise.band(value_b, mask)
+    ) == 0
+  end
+
+  @gens %{
+    a: 16807,
+    b: 48271
+  }
+  def next_value(value, gen, div) do
+    new_value = rem(value * @gens[gen], 2_147_483_647)
+
+    if rem(new_value, div) == 0 do
+      new_value
+    else
+      next_value(new_value, gen, div)
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+Utils.process(703, 516, 1, 1, 40_000_000, 0)
+```
+
+## Part 02
+
+```elixir
+Utils.process(703, 516, 4, 8, 5_000_000, 0)
+```

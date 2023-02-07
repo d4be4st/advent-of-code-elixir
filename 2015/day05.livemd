@@ -1,0 +1,80 @@
+# Day 05
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(fn line ->
+  line
+  |> String.graphemes()
+  |> Enum.chunk_every(2, 1)
+  |> Enum.reduce_while({0, false}, fn [char1 | char2], {count, double} ->
+    char2 = Enum.join(char2)
+    count = if Enum.member?(["a", "e", "i", "o", "u"], char1), do: count + 1, else: count
+    double = double || char1 == char2
+    forbidden = Enum.member?(["ab", "cd", "pq", "xy"], char1 <> char2)
+
+    # IO.inspect({[char1, char2], count, double, forbidden})
+    cond do
+      forbidden -> {:halt, false}
+      count >= 3 && double && char2 == "" -> {:halt, true}
+      true -> {:cont, {count, double}}
+    end
+  end)
+end)
+|> Enum.count(&(&1 == true))
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(fn line ->
+  graphemes = String.graphemes(line)
+
+  double =
+    graphemes
+    |> Enum.chunk_every(2, 1)
+    |> Enum.reduce_while({%{}, ""}, fn chars, {acc, prev} ->
+      chars = Enum.join(chars)
+
+      # IO.inspect({chars, prev, acc})
+      cond do
+        chars == prev -> {:cont, {acc, chars}}
+        Map.get(acc, chars, 0) + 1 >= 2 -> {:halt, true}
+        true -> {:cont, {Map.update(acc, chars, 1, &(&1 + 1)), chars}}
+      end
+    end)
+
+  sandwitch =
+    graphemes
+    |> Enum.chunk_every(3, 1, :discard)
+    |> Enum.reduce_while(false, fn chars, _ ->
+      case chars do
+        [x, _, x] -> {:halt, true}
+        _ -> {:cont, false}
+      end
+    end)
+
+  double == true && sandwitch
+end)
+|> Enum.count(& &1)
+```

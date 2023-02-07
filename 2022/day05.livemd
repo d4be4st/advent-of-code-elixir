@@ -1,0 +1,138 @@
+# Day 05
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+```elixir
+input_stacks = Kino.Input.textarea("input")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input_moves = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def build_stacks(lines) do
+    lines
+    |> Enum.reduce([[], [], [], [], [], [], [], [], []], fn line, stacks ->
+      0..8
+      |> Enum.reduce(stacks, fn index, stacks ->
+        case String.at(line, index * 4 + 1) do
+          " " -> stacks
+          x -> List.update_at(stacks, index, fn stack -> [x | stack] end)
+        end
+      end)
+    end)
+    |> Enum.map(&Enum.reverse/1)
+  end
+end
+
+defmodule Part1 do
+  def move_stacks([], stacks), do: stacks
+
+  def move_stacks([line | lines], stacks) do
+    ["move", times, "from", from, "to", to] = String.split(line, " ")
+
+    stacks =
+      move_stack(
+        stacks,
+        String.to_integer(times),
+        String.to_integer(from) - 1,
+        String.to_integer(to) - 1
+      )
+
+    move_stacks(lines, stacks)
+  end
+
+  def move_stack(stacks, 0, _, _), do: stacks
+
+  def move_stack(stacks, times, from, to) do
+    {item, stacks} = pop_stack(stacks, from)
+    stacks = push_stack(stacks, to, item)
+    move_stack(stacks, times - 1, from, to)
+  end
+
+  def pop_stack(stacks, index) do
+    [item | stack] = Enum.at(stacks, index)
+    {item, List.replace_at(stacks, index, stack)}
+  end
+
+  def push_stack(stacks, index, item) do
+    List.update_at(stacks, index, fn stack -> [item | stack] end)
+  end
+end
+
+defmodule Part2 do
+  def move_stacks([], stacks), do: stacks
+
+  def move_stacks([line | lines], stacks) do
+    ["move", times, "from", from, "to", to] = String.split(line, " ")
+
+    stacks =
+      move_stack(
+        stacks,
+        String.to_integer(times),
+        String.to_integer(from) - 1,
+        String.to_integer(to) - 1
+      )
+
+    move_stacks(lines, stacks)
+  end
+
+  def move_stack(stacks, times, from, to) do
+    {items, stack} = pop_stack(Enum.at(stacks, from), [], times)
+    stacks = List.replace_at(stacks, from, stack)
+    stack = push_stack(Enum.at(stacks, to), items)
+    stacks = List.replace_at(stacks, to, stack)
+    stacks
+  end
+
+  def pop_stack(stack, items, 0), do: {Enum.reverse(items), stack}
+
+  def pop_stack([item | stack], items, times) do
+    pop_stack(stack, [item | items], times - 1)
+  end
+
+  def push_stack(stack, items) do
+    items ++ stack
+  end
+end
+
+stacks =
+  input_stacks
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Utils.build_stacks()
+```
+
+## Part 01
+
+```elixir
+input_moves
+|> Kino.Input.read()
+|> String.split("\n")
+|> Part1.move_stacks(stacks)
+|> Enum.map(fn [item | _stack] -> item end)
+|> Enum.join()
+```
+
+## Part 02
+
+```elixir
+input_moves
+|> Kino.Input.read()
+|> String.split("\n")
+|> Part2.move_stacks(stacks)
+|> Enum.map(fn [item | _stack] -> item end)
+|> Enum.join()
+```

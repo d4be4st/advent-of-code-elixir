@@ -1,0 +1,50 @@
+# Maths
+
+## Module
+
+```elixir
+defmodule Math do
+  # permutations
+  def permutations([]) do
+    [[]]
+  end
+
+  def permutations(list) do
+    for h <- list, t <- permutations(list -- [h]), do: [h | t]
+  end
+
+  # combine array with itself to array of size k
+  def combinations(_, 0), do: [[]]
+  def combinations([], _), do: []
+
+  def combinations([x | xs], r) do
+    for(y <- combinations(xs, r - 1), do: [x | y]) ++ combinations(xs, r)
+  end
+
+  # dot product of arrays
+  def product([]), do: [[]]
+
+  def product([list | rest]) do
+    for x <- list, y <- product(rest), do: [x | y]
+  end
+end
+```
+
+## Usage
+
+```elixir
+[1, 2, 3, 4]
+|> Math.permutations()
+```
+
+```elixir
+[1, 2, 3, 4]
+|> Math.combinations(2)
+```
+
+```elixir
+array1 = [1, 2, 3, 4]
+array2 = [5, 6]
+array3 = [7, 8, 9]
+Math.product([array1, array2, array3])
+```

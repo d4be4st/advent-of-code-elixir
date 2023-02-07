@@ -1,0 +1,176 @@
+# Day 22
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def prepare(lines) do
+    lines
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {line, y}, grid ->
+      line
+      |> String.graphemes()
+      |> Enum.with_index()
+      |> Enum.reduce(grid, fn {char, x}, grid ->
+        if char == "#", do: Map.put(grid, {x, y}, :infected), else: Map.put(grid, {x, y}, :clean)
+      end)
+    end)
+  end
+
+  def center(grid) do
+    {maxx, maxy} = grid |> Map.keys() |> Enum.max()
+    {div(maxx, 2), div(maxy, 2)}
+  end
+end
+
+defmodule Part1 do
+  def run(grid) do
+    center = Utils.center(grid)
+
+    process({center, :north}, grid, 0, 10000)
+  end
+
+  def process(_, _, infected, 0), do: infected
+
+  def process({coord, direction}, grid, infected, times) do
+    case Map.get(grid, coord, :clean) do
+      :infected ->
+        process(
+          next_coord(:right, coord, direction),
+          Map.put(grid, coord, :clean),
+          infected,
+          times - 1
+        )
+
+      :clean ->
+        process(
+          next_coord(:left, coord, direction),
+          Map.put(grid, coord, :infected),
+          infected + 1,
+          times - 1
+        )
+    end
+  end
+
+  def next_coord(:right, {x, y}, :north), do: {{x + 1, y}, :east}
+  def next_coord(:right, {x, y}, :east), do: {{x, y + 1}, :south}
+  def next_coord(:right, {x, y}, :south), do: {{x - 1, y}, :west}
+  def next_coord(:right, {x, y}, :west), do: {{x, y - 1}, :north}
+  def next_coord(:left, {x, y}, :north), do: {{x - 1, y}, :west}
+  def next_coord(:left, {x, y}, :east), do: {{x, y - 1}, :north}
+  def next_coord(:left, {x, y}, :south), do: {{x + 1, y}, :east}
+  def next_coord(:left, {x, y}, :west), do: {{x, y + 1}, :south}
+end
+
+# grid =
+# "..#
+# #..
+# ..."
+#   |> String.split("\n")
+#   |> Utils.prepare()
+#   |> Utils.run
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Utils.prepare()
+|> Part1.run()
+```
+
+## Part 02
+
+```elixir
+defmodule Part2 do
+  def run(grid) do
+    center = Utils.center(grid)
+
+    process({center, :north}, grid, 0, 10_000_000)
+  end
+
+  def process(_, _, infected, 0), do: infected
+
+  def process({coord, direction}, grid, infected, times) do
+    case Map.get(grid, coord, :clean) do
+      :infected ->
+        process(
+          next_coord(:right, coord, direction),
+          Map.put(grid, coord, :flagged),
+          infected,
+          times - 1
+        )
+
+      :flagged ->
+        process(
+          next_coord(:reverse, coord, direction),
+          Map.put(grid, coord, :clean),
+          infected,
+          times - 1
+        )
+
+      :weakened ->
+        process(
+          next_coord(:strait, coord, direction),
+          Map.put(grid, coord, :infected),
+          infected + 1,
+          times - 1
+        )
+
+      :clean ->
+        process(
+          next_coord(:left, coord, direction),
+          Map.put(grid, coord, :weakened),
+          infected,
+          times - 1
+        )
+    end
+  end
+
+  def next_coord(:right, coord, :north), do: move_to(coord, :east)
+  def next_coord(:right, coord, :east), do: move_to(coord, :south)
+  def next_coord(:right, coord, :south), do: move_to(coord, :west)
+  def next_coord(:right, coord, :west), do: move_to(coord, :north)
+  def next_coord(:left, coord, :north), do: move_to(coord, :west)
+  def next_coord(:left, coord, :east), do: move_to(coord, :north)
+  def next_coord(:left, coord, :south), do: move_to(coord, :east)
+  def next_coord(:left, coord, :west), do: move_to(coord, :south)
+  def next_coord(:strait, coord, :north), do: move_to(coord, :north)
+  def next_coord(:strait, coord, :east), do: move_to(coord, :east)
+  def next_coord(:strait, coord, :south), do: move_to(coord, :south)
+  def next_coord(:strait, coord, :west), do: move_to(coord, :west)
+  def next_coord(:reverse, coord, :north), do: move_to(coord, :south)
+  def next_coord(:reverse, coord, :east), do: move_to(coord, :west)
+  def next_coord(:reverse, coord, :south), do: move_to(coord, :north)
+  def next_coord(:reverse, coord, :west), do: move_to(coord, :east)
+
+  def move_to({x, y}, :east), do: {{x + 1, y}, :east}
+  def move_to({x, y}, :south), do: {{x, y + 1}, :south}
+  def move_to({x, y}, :west), do: {{x - 1, y}, :west}
+  def move_to({x, y}, :north), do: {{x, y - 1}, :north}
+end
+```
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Utils.prepare()
+|> Part2.run()
+```

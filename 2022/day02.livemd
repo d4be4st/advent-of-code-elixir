@@ -1,0 +1,81 @@
+# Day 02
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def score_shape([_, "X"]), do: 1
+  def score_shape([_, "Y"]), do: 2
+  def score_shape([_, "Z"]), do: 3
+
+  # rock = A, X
+  # paper = B, Y
+  # scissors = C, Z
+  def score_outcome(["A", "X"]), do: 3
+  def score_outcome(["B", "X"]), do: 0
+  def score_outcome(["C", "X"]), do: 6
+  def score_outcome(["A", "Y"]), do: 6
+  def score_outcome(["B", "Y"]), do: 3
+  def score_outcome(["C", "Y"]), do: 0
+  def score_outcome(["A", "Z"]), do: 0
+  def score_outcome(["B", "Z"]), do: 6
+  def score_outcome(["C", "Z"]), do: 3
+end
+
+defmodule Part2 do
+  # rock = A, X
+  # paper = B, Y
+  # scissors = C, Z
+  def score_shape(["A", "X"]), do: 3
+  def score_shape(["B", "X"]), do: 1
+  def score_shape(["C", "X"]), do: 2
+  def score_shape(["A", "Y"]), do: 1
+  def score_shape(["B", "Y"]), do: 2
+  def score_shape(["C", "Y"]), do: 3
+  def score_shape(["A", "Z"]), do: 2
+  def score_shape(["B", "Z"]), do: 3
+  def score_shape(["C", "Z"]), do: 1
+
+  def score_outcome([_, "X"]), do: 0
+  def score_outcome([_, "Y"]), do: 3
+  def score_outcome([_, "Z"]), do: 6
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(0, fn line, sum ->
+  event = String.split(line, " ")
+  sum + Utils.score_shape(event) + Utils.score_outcome(event)
+end)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(0, fn line, sum ->
+  event = String.split(line, " ")
+  sum + Part2.score_shape(event) + Part2.score_outcome(event)
+end)
+```

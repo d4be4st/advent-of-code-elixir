@@ -1,0 +1,214 @@
+# Day 18
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Part 01
+
+```elixir
+defmodule Computer do
+  def run(instructions) do
+    process(%{}, 0, instructions)
+  end
+
+  def process(registers, address, instructions) do
+    case Enum.at(instructions, address) do
+      nil ->
+        registers
+
+      instruction ->
+        case String.split(instruction) do
+          ["snd", reg] ->
+            value = value(registers, reg)
+
+            registers
+            |> Map.update(:output, [value], fn arr -> [value | arr] end)
+            |> process(address + 1, instructions)
+
+          ["rcv", reg] ->
+            value = value(registers, reg)
+
+            if value != 0 do
+              Map.get(registers, :output) |> List.first()
+            else
+              process(registers, address + 1, instructions)
+            end
+
+          ["set", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            registers
+            |> Map.put(reg1, value)
+            |> process(address + 1, instructions)
+
+          ["add", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            registers
+            |> Map.update(reg1, value, fn v -> v + value end)
+            |> process(address + 1, instructions)
+
+          ["mul", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            registers
+            |> Map.update(reg1, 0, fn v -> v * value end)
+            |> process(address + 1, instructions)
+
+          ["mod", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            registers
+            |> Map.update(reg1, 0, fn v -> rem(v, value) end)
+            |> process(address + 1, instructions)
+
+          ["jgz", reg1, reg2] ->
+            value = if value(registers, reg1) > 0, do: value(registers, reg2), else: 1
+
+            process(registers, address + value, instructions)
+        end
+    end
+  end
+
+  def value(registers, reg) when reg >= "a" and reg <= "z" do
+    Map.get(registers, reg, 0)
+  end
+
+  def value(_registers, reg) do
+    String.to_integer(reg)
+  end
+end
+
+# instructions =
+# "set a 1
+# add a 2
+# mul a a
+# mod a 5
+# snd a
+# set a 0
+# rcv a
+# jgz a -1
+# set a 1
+# jgz a -2"
+# |> String.split("\n")
+# |> Computer.run()
+```
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Computer.run()
+```
+
+## Part 02
+
+```elixir
+defmodule Computer2 do
+  def run(instructions) do
+    run(
+      %{"p" => 0, output: [], sent: 0, halt: false},
+      0,
+      %{"p" => 1, output: [], sent: 0, halt: false},
+      0,
+      instructions
+    )
+  end
+
+  def run(%{halt: true}, _, %{halt: true, sent: sent}, _, _), do: sent
+
+  def run(registers_a, address_a, registers_b, address_b, instructions) do
+    {registers_a, registers_b, address_a} =
+      process(registers_a, registers_b, address_a, instructions)
+
+    {registers_b, registers_a, address_b} =
+      process(registers_b, registers_a, address_b, instructions)
+
+    run(registers_a, address_a, registers_b, address_b, instructions)
+  end
+
+  def process(registers, registers_other, address, instructions) do
+    case Enum.at(instructions, address) do
+      nil ->
+        {:halt, registers, 0, nil}
+
+      instruction ->
+        case String.split(instruction) do
+          ["snd", reg] ->
+            value = value(registers, reg)
+
+            {
+              Map.update!(registers, :sent, &(&1 + 1)),
+              Map.update!(registers_other, :output, &(&1 ++ [value])),
+              address + 1
+            }
+
+          ["rcv", reg] ->
+            case Map.get(registers, :output) do
+              [] ->
+                {%{registers | halt: true}, registers_other, address}
+
+              [value | output] ->
+                registers =
+                  registers
+                  |> Map.put(reg, value)
+                  |> Map.put(:output, output)
+                  |> Map.put(:halt, false)
+
+                {registers, registers_other, address + 1}
+            end
+
+          ["set", reg1, reg2] ->
+            value = value(registers, reg2)
+            {Map.put(registers, reg1, value), registers_other, address + 1}
+
+          ["add", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            {Map.update(registers, reg1, value, &(&1 + value)), registers_other, address + 1}
+
+          ["mul", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            {Map.update(registers, reg1, value, &(&1 * value)), registers_other, address + 1}
+
+          ["mod", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            {Map.update(registers, reg1, value, &rem(&1, value)), registers_other, address + 1}
+
+          ["jgz", reg1, reg2] ->
+            value = if value(registers, reg1) > 0, do: value(registers, reg2), else: 1
+
+            {registers, registers_other, address + value}
+        end
+    end
+  end
+
+  def value(registers, reg) when reg >= "a" and reg <= "z" do
+    Map.get(registers, reg, 0)
+  end
+
+  def value(_registers, reg) do
+    String.to_integer(reg)
+  end
+end
+```
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Computer2.run()
+```

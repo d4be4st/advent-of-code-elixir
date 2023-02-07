@@ -1,0 +1,75 @@
+# Day 14
+
+## Shared
+
+```elixir
+defmodule Utils do
+  @salt "qzyelonm"
+  # @salt "abc"
+
+  def process(index, folds, potential_passwords, passwords) do
+    if Enum.count(passwords) >= 64 do
+      Enum.sort_by(passwords, fn {_, index} -> index end)
+      |> Enum.slice(62..63)
+    else
+      hash = hash(@salt <> Integer.to_string(index), folds)
+      passwords = passwords(hash, potential_passwords, passwords)
+
+      potential_passwords =
+        potential_passwords(hash, index, potential_passwords)
+        |> Enum.filter(fn {_, char_index} -> index + 1 - char_index < 1000 end)
+        |> Kernel.--(passwords)
+
+      process(index + 1, folds, potential_passwords, passwords)
+    end
+  end
+
+  def hash(input, folds) do
+    Enum.reduce(1..folds, input, fn _, input ->
+      :crypto.hash(:md5, input) |> Base.encode16(case: :lower)
+    end)
+  end
+
+  def potential_passwords(hash, index, potential_passwords) do
+    case Regex.run(~r/(.)\1\1/, hash) do
+      [_, char] ->
+        [{char, index} | potential_passwords]
+
+      nil ->
+        potential_passwords
+    end
+  end
+
+  def passwords(hash, potential_passwords, passwords) do
+    case valid_passwords(hash, potential_passwords) do
+      nil ->
+        passwords
+
+      values ->
+        values ++ passwords
+    end
+  end
+
+  def valid_passwords(hash, potential_passwords) do
+    potential_passwords
+    |> Enum.filter(fn {char, _} ->
+      Regex.compile!("#{char}{5}")
+      |> Regex.match?(hash)
+    end)
+  end
+end
+
+Utils.hash("abc0", 2017)
+```
+
+## Part 01
+
+```elixir
+Utils.process(0, 1, [], [])
+```
+
+## Part 02
+
+```elixir
+Utils.process(0, 2017, [], [])
+```

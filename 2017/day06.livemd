@@ -1,0 +1,80 @@
+# Day 06
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def prepare(array) do
+    array
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {x, i}, acc -> Map.put(acc, i, x) end)
+  end
+
+  def run(map, cycle, seen) do
+    case Enum.find(seen, fn {_, m} -> m == map end) do
+      {c, _} ->
+        {cycle, c}
+
+      nil ->
+        {index, count} = Enum.max_by(map, fn {_, x} -> x end)
+
+        redistribute(Map.put(map, index, 0), 1, index, count, Enum.count(map))
+        |> run(cycle + 1, [{cycle, map} | seen])
+    end
+  end
+
+  def redistribute(map, _, _, 0, _), do: map
+
+  def redistribute(map, index, offset, count, size) do
+    redistribute(
+      Map.update!(map, rem(index + offset, size), &(&1 + 1)),
+      index,
+      offset + 1,
+      count - 1,
+      size
+    )
+  end
+end
+
+# "0 2 7 0"
+# |> String.split(" ")
+# |> Utils.prepare
+# |> Utils.run(0, MapSet.new)
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\t", trim: true)
+|> Utils.prepare()
+|> Utils.run(0, [])
+|> elem(0)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\t", trim: true)
+|> Utils.prepare()
+|> Utils.run(0, [])
+|> then(fn {cycle, index} -> cycle - index end)
+```

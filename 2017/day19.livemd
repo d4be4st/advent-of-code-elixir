@@ -1,0 +1,106 @@
+# Day 19
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def build(lines) do
+    lines
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {line, y}, grid ->
+      line
+      |> String.graphemes()
+      |> Enum.with_index()
+      |> Enum.reduce(grid, fn {ch, x}, grid ->
+        Map.put(grid, {x, y}, ch)
+      end)
+    end)
+  end
+
+  def path(coord, direction, grid, steps, seen) do
+    case {Map.get(grid, coord), direction} do
+      {nil, direction} ->
+        throw(:error)
+
+      {"|", direction} ->
+        next_coord(coord, direction)
+        |> path(direction, grid, steps + 1, seen)
+
+      {"-", direction} ->
+        next_coord(coord, direction)
+        |> path(direction, grid, steps + 1, seen)
+
+      {"+", direction} ->
+        cond do
+          direction != :south && Map.get(grid, next_coord(coord, :north), " ") != " " ->
+            path(next_coord(coord, :north), :north, grid, steps + 1, seen)
+
+          direction != :north && Map.get(grid, next_coord(coord, :south), " ") != " " ->
+            path(next_coord(coord, :south), :south, grid, steps + 1, seen)
+
+          direction != :west && Map.get(grid, next_coord(coord, :east), " ") != " " ->
+            path(next_coord(coord, :east), :east, grid, steps + 1, seen)
+
+          direction != :east && Map.get(grid, next_coord(coord, :west), " ") != " " ->
+            path(next_coord(coord, :west), :west, grid, steps + 1, seen)
+        end
+
+      {" ", _} ->
+        {seen |> Enum.reverse() |> Enum.join(), steps}
+
+      {ch, direction} ->
+        next_coord(coord, direction)
+        |> path(direction, grid, steps + 1, [ch | seen])
+    end
+  end
+
+  def next_coord({x, y}, direction) do
+    case direction do
+      :south -> {x, y + 1}
+      :north -> {x, y - 1}
+      :east -> {x + 1, y}
+      :west -> {x - 1, y}
+    end
+  end
+end
+
+grid =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Utils.build()
+```
+
+## Part 01
+
+```elixir
+grid
+|> Enum.find(fn {{_, x}, v} -> x == 0 && v == "|" end)
+|> Kernel.elem(0)
+|> Utils.path(:south, grid, 0, [])
+|> Kernel.elem(0)
+```
+
+## Part2
+
+```elixir
+grid
+|> Enum.find(fn {{_, x}, v} -> x == 0 && v == "|" end)
+|> Kernel.elem(0)
+|> Utils.path(:south, grid, 0, [])
+|> Kernel.elem(1)
+```

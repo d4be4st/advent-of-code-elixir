@@ -1,0 +1,101 @@
+# Day 07
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+registers =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce(%{}, fn line, acc ->
+    case String.split(line, " ") do
+      [value, "->", out] -> Map.put(acc, out, {:to, value})
+      [in1, "AND", in2, "->", out] -> Map.put(acc, out, {:and, in1, in2})
+      [in1, "OR", in2, "->", out] -> Map.put(acc, out, {:or, in1, in2})
+      [in1, "LSHIFT", in2, "->", out] -> Map.put(acc, out, {:ls, in1, in2})
+      [in1, "RSHIFT", in2, "->", out] -> Map.put(acc, out, {:rs, in1, in2})
+      ["NOT", in1, "->", out] -> Map.put(acc, out, {:not, in1})
+    end
+  end)
+```
+
+```elixir
+defmodule Util do
+  def traverse(registers, reg) do
+    case registers[reg] do
+      {:to, in1} ->
+        registers = traverse(registers, in1)
+        Map.put(registers, reg, registers[in1])
+
+      {:and, in1, in2} ->
+        registers =
+          registers
+          |> traverse(in1)
+          |> traverse(in2)
+
+        Map.put(registers, reg, Bitwise.band(registers[in1], registers[in2]))
+
+      {:or, in1, in2} ->
+        registers =
+          registers
+          |> traverse(in1)
+          |> traverse(in2)
+
+        Map.put(registers, reg, Bitwise.bor(registers[in1], registers[in2]))
+
+      {:ls, in1, in2} ->
+        registers = traverse(registers, in1)
+        Map.put(registers, reg, Bitwise.bsl(registers[in1], String.to_integer(in2)))
+
+      {:rs, in1, in2} ->
+        registers = traverse(registers, in1)
+        Map.put(registers, reg, Bitwise.bsr(registers[in1], String.to_integer(in2)))
+
+      {:not, in1} ->
+        registers = traverse(registers, in1)
+        Map.put(registers, reg, Bitwise.bnot(registers[in1]))
+
+      nil ->
+        Map.put(registers, reg, String.to_integer(reg))
+
+      _ ->
+        registers
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+registers
+|> Util.traverse("a")
+|> Map.get("a")
+```
+
+## Part 02
+
+```elixir
+new_registers =
+  registers
+  |> Util.traverse("a")
+
+registers
+|> Map.put("b", new_registers["a"])
+|> Util.traverse("a")
+|> Map.get("a")
+```

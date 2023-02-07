@@ -1,0 +1,134 @@
+# Day 21
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def process(password, ["swap", "position", xi, "with", "position", yi]) do
+    xi = String.to_integer(xi)
+    yi = String.to_integer(yi)
+    xc = Enum.at(password, xi)
+    yc = Enum.at(password, yi)
+
+    password
+    |> List.replace_at(xi, yc)
+    |> List.replace_at(yi, xc)
+  end
+
+  def process(password, ["swap", "letter", xc, "with", "letter", yc]) do
+    xi = Enum.find_index(password, &(&1 == xc))
+    yi = Enum.find_index(password, &(&1 == yc))
+
+    password
+    |> List.replace_at(xi, yc)
+    |> List.replace_at(yi, xc)
+  end
+
+  def process(password, ["reverse", "positions", xi, "through", yi]) do
+    xi = String.to_integer(xi)
+    yi = String.to_integer(yi)
+
+    Enum.reverse_slice(password, xi, yi - xi + 1)
+  end
+
+  def process(password, ["rotate", "left", step, "steps"]) do
+    step = String.to_integer(step)
+
+    rotate_left(password, step)
+  end
+
+  def process(password, ["rotate", "right", step, "steps"]) do
+    step = String.to_integer(step)
+
+    rotate_right(password, step)
+  end
+
+  def process(password, ["rotate", "based", "on", "position", "of", "letter", xc]) do
+    step = Enum.find_index(password, &(&1 == xc))
+    step = if step >= 4, do: step + 1, else: step
+
+    rotate_right(password, step + 1)
+  end
+
+  def process(password, ["move", "position", xi, "to", "position", yi]) do
+    xi = String.to_integer(xi)
+    yi = String.to_integer(yi)
+
+    {xc, password} = List.pop_at(password, xi)
+    List.insert_at(password, yi, xc)
+  end
+
+  def rotate_left(password, 0), do: password
+  def rotate_left([head | tail], count), do: rotate_left(tail ++ [head], count - 1)
+  def rotate_right(password, 0), do: password
+
+  def rotate_right(password, count) do
+    {tail, password} = List.pop_at(password, -1)
+    rotate_right([tail | password], count - 1)
+  end
+
+  # permutations
+  def permutations([]) do
+    [[]]
+  end
+
+  def permutations(list) do
+    for h <- list, t <- permutations(list -- [h]), do: [h | t]
+  end
+end
+```
+
+## Part 01
+
+```elixir
+password = String.graphemes("abcdefgh")
+
+input
+|> Kino.Input.read()
+|> String.split("\n")Î
+|> Enum.reduce(password, fn line, password ->
+  Utils.process(password, String.split(line, " "))
+end)
+|> Enum.join
+```
+
+## Part 02
+
+```elixir
+goal = String.graphemes("fbgdceah")
+
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+
+String.graphemes("abcdefgh")
+|> Utils.permutations()
+|> Enum.reduce_while(goal, fn password, goal ->
+  new_password =
+    instructions
+    |> Enum.reduce(password, fn instruction, password ->
+      Utils.process(password, String.split(instruction, " "))
+    end)
+
+  if new_password == goal do
+    {:halt, password |> Enum.join()}
+  else
+    {:cont, goal}
+  end
+end)
+```

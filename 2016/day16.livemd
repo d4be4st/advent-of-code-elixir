@@ -1,0 +1,70 @@
+# Day 16
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def run(input, target_size) do
+    if String.length(input) > target_size do
+      input
+    else
+      input
+      |> step
+      |> run(target_size)
+    end
+  end
+
+  def step(input) do
+    second_part =
+      input
+      |> String.graphemes()
+      |> Enum.reverse()
+      |> Enum.map(fn x -> if x == "1", do: "0", else: "1" end)
+
+    "#{input}0#{second_part}"
+  end
+
+  def checksum(chunks) do
+    if rem(Enum.count(chunks), 2) != 0 do
+      Enum.map(chunks, fn
+        [x, x] -> "1"
+        [_x, _y] -> "0"
+      end)
+      |> Enum.join("")
+    else
+      Enum.map(chunks, fn
+        [x, x] -> "1"
+        [_x, _y] -> "0"
+      end)
+      |> Enum.chunk_every(2)
+      |> checksum()
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+target_size = 272
+
+"10001110011110000"
+|> Utils.run(target_size)
+|> String.graphemes()
+|> Enum.slice(0..(target_size - 1))
+|> Enum.chunk_every(2)
+|> Utils.checksum()
+```
+
+## Part 02
+
+```elixir
+target_size = 35_651_584
+
+"10001110011110000"
+|> Utils.run(target_size)
+|> String.graphemes()
+|> Enum.slice(0..(target_size - 1))
+|> Enum.chunk_every(2)
+|> Utils.checksum()
+```

@@ -1,0 +1,62 @@
+# Day 19
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+input_molecule = Kino.Input.textarea("molecule")
+```
+
+## Part 01
+
+```elixir
+init_molecule = Kino.Input.read(input_molecule)
+
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(%{}, fn line, acc ->
+  [molecule, replacement] = String.split(line, " => ")
+  Map.update(acc, molecule, [replacement], &[replacement | &1])
+end)
+|> Enum.reduce(MapSet.new(), fn {molecule, replacements}, set ->
+  molecule
+  |> Regex.compile!()
+  |> Regex.scan(init_molecule, return: :index)
+  |> List.flatten()
+  |> Enum.reduce(set, fn {index, count}, set ->
+    first_part = String.slice(init_molecule, 0..(index - 1))
+    second_part = String.slice(init_molecule, (index + count)..-1)
+
+    Enum.reduce(replacements, set, fn replacement, set ->
+      MapSet.put(set, Enum.join([first_part, second_part], replacement))
+    end)
+  end)
+end)
+|> Enum.count()
+```
+
+## Part 02
+
+```elixir
+# https://www.reddit.com/r/adventofcode/comments/3xflz8/comment/cy4etju/
+
+init_molecule = Kino.Input.read(input_molecule)
+molecule = List.flatten(Regex.scan(~r/[A-Z][a-z]?/, init_molecule))
+length = Enum.count(molecule)
+parenthesis = Enum.count(molecule, &(&1 == "Rn" || &1 == "Ar"))
+comma = Enum.count(molecule, &(&1 == "Y"))
+
+length - parenthesis - 2 * comma - 1
+```

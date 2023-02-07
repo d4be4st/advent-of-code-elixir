@@ -1,0 +1,80 @@
+# Day 04
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(line) do
+    Regex.named_captures(~r/(?<room>.*)-(?<id>\d+)\[(?<checksum>.*)\]/, line)
+  end
+
+  def valid?(%{"checksum" => checksum, "room" => room}) do
+    room
+    |> String.graphemes()
+    |> Enum.reduce(%{}, fn char, acc ->
+      if char == "-", do: acc, else: Map.update(acc, char, 1, &(&1 + 1))
+    end)
+    |> Map.to_list()
+    |> Enum.sort_by(fn {k, v} -> {-v, k} end)
+    |> Enum.take(5)
+    |> Enum.map(&elem(&1, 0))
+    |> Enum.join()
+    |> Kernel.==(checksum)
+  end
+
+  def decrypt(%{"room" => room, "id" => id}) do
+    room
+    |> String.to_charlist()
+    |> Enum.map(fn
+      ?- ->
+        32
+
+      char ->
+        rem(char - ?a + String.to_integer(id), 26) + ?a
+    end)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.reduce(0, fn line, sum ->
+  parsed = Utils.parse(line)
+  if Utils.valid?(parsed), do: sum + String.to_integer(parsed["id"]), else: sum
+end)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.reduce_while(0, fn line, sum ->
+  parsed = Utils.parse(line)
+
+  if Utils.valid?(parsed) && Utils.decrypt(parsed) |> to_string() |> String.starts_with?("north") do
+    {:halt, parsed["id"]}
+  else
+    {:cont, sum}
+  end
+end)
+```

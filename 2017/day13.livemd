@@ -1,0 +1,76 @@
+# Day 13
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def build(lines) do
+    lines
+    |> Enum.map(fn line ->
+      [index, size] = String.split(line, ": ") |> Enum.map(&String.to_integer/1)
+      {index, size}
+    end)
+  end
+
+  def part1([], _position, positions_caught), do: positions_caught
+
+  def part1([{index, size} | rest], delay, positions_caught) do
+    if sentry_position(delay + index, size) == 0 do
+      part1(rest, delay, [{index, size} | positions_caught])
+    else
+      part1(rest, delay, positions_caught)
+    end
+  end
+
+  def part2(list, delay) do
+    if part1(list, delay, []) == [] do
+      delay
+    else
+      part2(list, delay + 1)
+    end
+  end
+
+  def sentry_position(position, size) do
+    new_position = rem(position, size + size - 2)
+
+    if new_position > size do
+      2 * size - new_position - 2
+    else
+      new_position
+    end
+  end
+end
+
+list =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Utils.build()
+```
+
+## Part 01
+
+```elixir
+Utils.part1(list, 0, [])
+|> Enum.reduce(0, fn {x, y}, sum -> sum + x * y end)
+```
+
+## Part 02
+
+```elixir
+Utils.part2(list, 0)
+```

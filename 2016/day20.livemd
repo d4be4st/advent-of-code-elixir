@@ -1,0 +1,61 @@
+# Day 20
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(fn line ->
+  String.split(line, "-") |> Enum.map(&String.to_integer/1)
+end)
+|> Enum.sort()
+|> Enum.reduce_while(-1, fn [low, high], current ->
+  if current + 1 >= low do
+    {:cont, high}
+  else
+    {:halt, current + 1}
+  end
+end)
+```
+
+## Part 02
+
+```elixir
+max = 4_294_967_296
+
+{high, count} =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.map(fn line ->
+    String.split(line, "-") |> Enum.map(&String.to_integer/1)
+  end)
+  |> Enum.sort()
+  |> Enum.reduce({0, 0}, fn [low, high], {current_high, count} ->
+    count =
+      if current_high < low do
+        count + low - current_high
+      else
+        count
+      end
+
+    {Enum.max([high + 1, current_high]), count}
+  end)
+
+count + max - high
+```

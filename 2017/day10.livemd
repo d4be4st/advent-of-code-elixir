@@ -1,0 +1,62 @@
+# Day 10
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def process(list, [], index, skip_size), do: {list, index, skip_size}
+
+  def process(list, [length | lengths], index, skip_size) do
+    {sub_list, rest} =
+      list
+      |> rotate_left(index)
+      |> Enum.split(length)
+
+    sub_list
+    |> Enum.reverse(rest)
+    |> rotate_right(index)
+    |> process(lengths, rem(index + length + skip_size, Enum.count(list)), skip_size + 1)
+  end
+
+  def rotate_left(list, index) do
+    {l, r} = Enum.split(list, index)
+    r ++ l
+  end
+
+  def rotate_right(list, index) do
+    {l, r} = Enum.split(list, Enum.count(list) - index)
+    r ++ l
+  end
+end
+
+list = 0..255 |> Enum.to_list()
+```
+
+## Part 01
+
+```elixir
+lengths = [14, 58, 0, 116, 179, 16, 1, 104, 2, 254, 167, 86, 255, 55, 122, 244]
+{[first, second | _rest], _, _} = Utils.process(list, lengths, 0, 0)
+first * second
+```
+
+## Part 02
+
+```elixir
+lengths = '14,58,0,116,179,16,1,104,2,254,167,86,255,55,122,244' ++ [17, 31, 73, 47, 23]
+
+Enum.reduce(0..63, {list, 0, 0}, fn _, {list, index, skip_size} ->
+  Utils.process(list, lengths, index, skip_size)
+end)
+|> Kernel.elem(0)
+|> Enum.chunk_every(16)
+|> Enum.map(fn chunk ->
+  Enum.reduce(chunk, fn x, acc ->
+    Bitwise.bxor(acc, x)
+  end)
+end)
+|> Enum.map(&Integer.to_string(&1, 16))
+|> Enum.map(&String.pad_leading(&1, 2, "0"))
+|> Enum.join()
+|> String.downcase()
+```

@@ -1,0 +1,156 @@
+# Day 20
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"},
+  {:map_diff, "~> 1.3.4"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(input, multiply \\ 1) do
+    input
+    |> String.split("\n")
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.map(&(&1 * multiply))
+    |> Enum.with_index(&{&2, &1})
+  end
+
+  def build_dlist([first, second | tail]) do
+    build_dlist([first, second | tail], first, %{first => {Enum.at(tail, -1), second}})
+  end
+
+  def build_dlist([prev, curr | []], first, map) do
+    Map.put(map, curr, {prev, first})
+  end
+
+  def build_dlist([prev, curr, next | tail], first, map) do
+    build_dlist([curr, next | tail], first, Map.put(map, curr, {prev, next}))
+  end
+
+  def run2(map, _, 0), do: map
+
+  def run2(map, list, times) do
+    run(map, list)
+    |> run2(list, times - 1)
+  end
+
+  def run(map, list) do
+    run(map, Enum.count(map), list)
+  end
+
+  def run(map, _, []), do: map
+
+  def run(map, size, [element | tail]) do
+    case elem(element, 1) do
+      positive when positive > 0 ->
+        next(map, element, rem(positive, size - 1))
+        |> run(size, tail)
+
+      negative when negative < 0 ->
+        prev(map, element, -rem(negative, size - 1))
+        |> run(size, tail)
+
+      _ ->
+        run(map, size, tail)
+    end
+  end
+
+  def next(map, _, 0), do: map
+
+  def next(map, element, times) do
+    {curr_prev, curr_next} = Map.get(map, element)
+    {prev_prev, _} = Map.get(map, curr_prev)
+    {_, next_next} = Map.get(map, curr_next)
+    {_, next_next_next} = Map.get(map, next_next)
+
+    map
+    |> Map.put(curr_prev, {prev_prev, curr_next})
+    |> Map.put(curr_next, {curr_prev, element})
+    |> Map.put(element, {curr_next, next_next})
+    |> Map.put(next_next, {element, next_next_next})
+    |> next(element, times - 1)
+  end
+
+  def prev(map, _, 0), do: map
+
+  def prev(map, element, times) do
+    {curr_prev, curr_next} = Map.get(map, element)
+    {_, next_next} = Map.get(map, curr_next)
+
+    {prev_prev, _} = Map.get(map, curr_prev)
+    {prev_prev_prev, _} = Map.get(map, prev_prev)
+
+    map
+    |> Map.put(prev_prev, {prev_prev_prev, element})
+    |> Map.put(element, {prev_prev, curr_prev})
+    |> Map.put(curr_prev, {element, curr_next})
+    |> Map.put(curr_next, {curr_prev, next_next})
+    |> prev(element, times - 1)
+  end
+
+  def to_list(map) do
+    keys = Map.keys(map)
+    start = Enum.find(keys, &(elem(&1, 1) == 0))
+
+    to_list([], Enum.count(keys), start, map)
+    |> Enum.reverse()
+  end
+
+  def to_list(list, size, _, _) when length(list) == size, do: list
+
+  def to_list(list, size, element, map) do
+    {_, next} = Map.get(map, element)
+    to_list([elem(element, 1) | list], size, next, map)
+  end
+
+  def find(list, indexes) do
+    size = Enum.count(list)
+
+    Enum.reduce(indexes, 0, fn index, sum ->
+      sum + Enum.at(list, rem(index, size))
+    end)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+list =
+  input
+  |> Kino.Input.read()
+  |> Utils.parse()
+
+dlist = Utils.build_dlist(list)
+
+Utils.run(dlist, list)
+|> Utils.to_list()
+|> Utils.find([1000, 2000, 3000])
+```
+
+## Part 02
+
+```elixir
+list =
+  input
+  |> Kino.Input.read()
+  |> Utils.parse(811_589_153)
+
+dlist = Utils.build_dlist(list)
+
+Utils.run2(dlist, list, 10)
+|> Utils.to_list()
+|> Utils.find([1000, 2000, 3000])
+```

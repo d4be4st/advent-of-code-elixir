@@ -1,0 +1,135 @@
+# Day 13
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(table, people, line) do
+    case line |> String.slice(0..-2) |> String.split(" ") do
+      [
+        person1,
+        _,
+        "gain",
+        happiness,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        person2
+      ] ->
+        {
+          Map.put(table, {person1, person2}, String.to_integer(happiness)),
+          people
+          |> MapSet.put(person1)
+          |> MapSet.put(person2)
+        }
+
+      [
+        person1,
+        _,
+        "lose",
+        happiness,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        person2
+      ] ->
+        {
+          Map.put(table, {person1, person2}, -String.to_integer(happiness)),
+          people
+          |> MapSet.put(person1)
+          |> MapSet.put(person2)
+        }
+    end
+  end
+
+  def permutations([]), do: [[]]
+
+  def permutations(list),
+    do: for(elem <- list, rest <- permutations(list -- [elem]), do: [elem | rest])
+
+  def happiness(seating, table) do
+    count = Enum.count(seating)
+
+    seating
+    |> Stream.cycle()
+    |> Enum.take(count + 1)
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.map(fn [person1, person2] ->
+      table[{person1, person2}] + table[{person2, person1}]
+    end)
+    |> Enum.sum()
+  end
+end
+```
+
+## Part 01
+
+```elixir
+{table, people} =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce({%{}, MapSet.new()}, fn line, {table, people} ->
+    Utils.parse(table, people, line)
+  end)
+
+seatings =
+  people
+  |> Enum.to_list()
+  |> Utils.permutations()
+  |> Enum.map(fn seating ->
+    Utils.happiness(seating, table)
+  end)
+  |> Enum.max()
+```
+
+## Part 02
+
+```elixir
+{table, people} =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce({%{}, MapSet.new()}, fn line, {table, people} ->
+    Utils.parse(table, people, line)
+  end)
+
+table =
+  people
+  |> Enum.reduce(table, fn person, table ->
+    table
+    |> Map.put({"me", person}, 0)
+    |> Map.put({person, "me"}, 0)
+  end)
+
+people = MapSet.put(people, "me")
+
+seatings =
+  people
+  |> Enum.to_list()
+  |> Utils.permutations()
+  |> Enum.map(fn seating ->
+    Utils.happiness(seating, table)
+  end)
+  |> Enum.max()
+```

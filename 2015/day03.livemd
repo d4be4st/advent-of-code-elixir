@@ -1,0 +1,59 @@
+# Day 03
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Part 01
+
+```elixir
+{map, _pos} =
+  input
+  |> Kino.Input.read()
+  |> String.graphemes()
+  |> Enum.reduce({%{{0, 0} => 1}, {0, 0}}, fn movement, {acc, {x, y}} ->
+    pos =
+      case movement do
+        "^" -> {x - 1, y}
+        "v" -> {x + 1, y}
+        "<" -> {x, y - 1}
+        ">" -> {x, y + 1}
+      end
+
+    {Map.update(acc, pos, 1, &(&1 + 1)), pos}
+  end)
+
+Enum.count(Map.keys(map))
+```
+
+## Part 02
+
+```elixir
+{map, _pos, _other_pos} =
+  input
+  |> Kino.Input.read()
+  |> String.graphemes()
+  |> Enum.reduce({%{{0, 0} => 2}, {0, 0}, {0, 0}}, fn movement, {acc, {x, y}, other_pos} ->
+    pos =
+      case movement do
+        "^" -> {x - 1, y}
+        "v" -> {x + 1, y}
+        "<" -> {x, y - 1}
+        ">" -> {x, y + 1}
+      end
+
+    {Map.update(acc, pos, 1, &(&1 + 1)), other_pos, pos}
+  end)
+
+Enum.count(Map.keys(map))
+```

@@ -1,0 +1,140 @@
+# Day 24
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def build_maze(input) do
+    input
+    |> String.split("\n")
+    |> Enum.with_index()
+    |> Enum.reduce({%{}, []}, fn {line, y}, maze ->
+      line
+      |> String.graphemes()
+      |> Enum.with_index()
+      |> Enum.reduce(maze, fn {char, x}, {coordinates, checkpoints} ->
+        case char do
+          "#" -> {Map.put(coordinates, {x, y}, :wall), checkpoints}
+          "." -> {Map.put(coordinates, {x, y}, :path), checkpoints}
+          c -> {Map.put(coordinates, {x, y}, :path), [{c, {x, y}} | checkpoints]}
+        end
+      end)
+    end)
+  end
+
+  def paths(points, maze) do
+    points
+    |> Enum.reduce(%{}, fn [{start, start_coord}, {finish, finish_coord}], acc ->
+      distance = bfs(:queue.from_list([{start_coord, 0}]), finish_coord, maze, MapSet.new())
+
+      acc
+      |> Map.put({start, finish}, distance)
+      |> Map.put({finish, start}, distance)
+    end)
+  end
+
+  def bfs(queue, goal, maze, traversed) do
+    {{:value, {point, distance}}, queue} = :queue.out(queue)
+
+    cond do
+      MapSet.member?(traversed, point) ->
+        bfs(queue, goal, maze, traversed)
+
+      point == goal ->
+        distance
+
+      true ->
+        traversed = MapSet.put(traversed, point)
+
+        next_points(point, maze)
+        |> Enum.reduce(queue, &:queue.in({&1, distance + 1}, &2))
+        |> bfs(goal, maze, traversed)
+    end
+  end
+
+  def next_points({x, y}, maze) do
+    [
+      Map.get(maze, {x, y - 1}) == :path && {x, y - 1},
+      Map.get(maze, {x, y + 1}) == :path && {x, y + 1},
+      Map.get(maze, {x - 1, y}) == :path && {x - 1, y},
+      Map.get(maze, {x + 1, y}) == :path && {x + 1, y}
+    ]
+    |> Enum.filter(&(&1 != false))
+  end
+end
+
+defmodule Maths do
+  # combine array with itself to array of size k
+  def combinations(_, 0), do: [[]]
+  def combinations([], _), do: []
+
+  def combinations([x | xs], r) do
+    for(y <- combinations(xs, r - 1), do: [x | y]) ++ combinations(xs, r)
+  end
+
+  # permutations
+  def permutations([]) do
+    [[]]
+  end
+
+  def permutations(list) do
+    for h <- list, t <- permutations(list -- [h]), do: [h | t]
+  end
+end
+
+{maze, checkpoints} =
+  input
+  |> Kino.Input.read()
+  |> Utils.build_maze()
+
+paths =
+  checkpoints
+  |> Enum.sort()
+  |> Maths.combinations(2)
+  |> Utils.paths(maze)
+
+[zero | rest] =
+  checkpoints
+  |> Enum.map(&elem(&1, 0))
+  |> Enum.sort()
+```
+
+## Part 01
+
+```elixir
+rest
+|> Maths.permutations()
+|> Enum.map(fn permutation ->
+  Enum.reduce(permutation, {0, zero}, fn checkpoint, {sum, last} ->
+    {sum + Map.get(paths, {last, checkpoint}), checkpoint}
+  end)
+end)
+|> Enum.min()
+```
+
+## Part 02
+
+```elixir
+rest
+|> Maths.permutations()
+|> Enum.map(fn permutation ->
+  Enum.reduce(permutation ++ [zero], {0, zero}, fn checkpoint, {sum, last} ->
+    {sum + Map.get(paths, {last, checkpoint}), checkpoint}
+  end)
+end)
+|> Enum.min()
+```

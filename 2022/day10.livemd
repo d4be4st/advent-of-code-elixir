@@ -1,0 +1,75 @@
+# Day 10
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def run(instructions) do
+    process(1, 1, instructions, [])
+  end
+
+  def process(_, _, [], output), do: output
+
+  def process(registerX, cycle, [instruction | instructions], output) do
+    output = add_output(cycle, registerX, output)
+    draw(registerX, cycle)
+
+    case String.split(instruction, " ") do
+      ["noop"] ->
+        process(registerX, cycle + 1, instructions, output)
+
+      ["addx", value] ->
+        process(registerX, cycle + 1, ["addx0 #{value}" | instructions], output)
+
+      ["addx0", value] ->
+        process(registerX + String.to_integer(value), cycle + 1, instructions, output)
+    end
+  end
+
+  def add_output(cycle, registerX, output) when cycle in [20, 60, 100, 140, 180, 220],
+    do: [registerX * cycle | output]
+
+  def add_output(_cycle, _registerX, output), do: output
+
+  def draw(registerX, cycle) do
+    if rem(cycle - 1, 40) >= registerX - 1 && rem(cycle - 1, 40) <= registerX + 1 do
+      IO.write("#")
+    else
+      IO.write(".")
+    end
+
+    if rem(cycle, 40) == 0, do: IO.write("\n")
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Utils.run()
+|> Enum.sum()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

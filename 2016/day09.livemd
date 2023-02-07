@@ -1,0 +1,75 @@
+# Day 09
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def run1(input, index, output_count) do
+    case Utils.regex(input, index) do
+      [{marker_from, marker_times}, {count_from, count_times}, {times_from, times_times}] ->
+        count = input |> String.slice(count_from, count_times) |> String.to_integer()
+        times = input |> String.slice(times_from, times_times) |> String.to_integer()
+        {output_count, index} = Utils.fill_output(input, marker_from, index, output_count)
+
+        {output_count, index} =
+          Utils.compile(input, {marker_times, count, times}, index, output_count)
+
+        Utils.run(input, index, output_count)
+
+      nil ->
+        Utils.fill_output(input, 0, index, output_count)
+    end
+  end
+
+  def fill_output(input, marker_from, index, output_count) when marker_from != index do
+    # IO.inspect(index..(marker_from-1))
+    {output_count + (String.slice(input, index..(marker_from - 1)) |> String.length()),
+     marker_from}
+  end
+
+  def fill_output(_input, _marker_from, index, output_count) do
+    {output_count, index}
+  end
+
+  def regex(input, index) do
+    Regex.run(~r/\((\d+)x(\d+)\)/, input, return: :index, offset: index)
+  end
+
+  def compile(input, {marker_times, count, times}, index, output_count) do
+    new_slice = String.slice(input, index + marker_times, count)
+    new_output_count = output_count + (String.duplicate(new_slice, times) |> String.length())
+    new_index = index + marker_times + count
+    {new_output_count, new_index}
+  end
+end
+```
+
+## Part 01
+
+```elixir
+{output, index} =
+  input
+  |> Kino.Input.read()
+  |> Utils.run(0, 0)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

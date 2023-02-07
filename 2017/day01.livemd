@@ -1,0 +1,59 @@
+# Day 01
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def process(index, list, sum) do
+    case {Enum.at(list, index), Enum.at(list, index + 1)} do
+      {_, nil} -> sum
+      {x, x} -> process(index + 1, list, sum + String.to_integer(x))
+      {_x, _y} -> process(index + 1, list, sum)
+    end
+  end
+
+  def process2(index, list, count, sum) do
+    if index == count do
+      sum
+    else
+      case {Enum.at(list, index), Enum.at(list, index + count)} do
+        {x, x} -> process2(index + 1, list, count, sum + String.to_integer(x))
+        {_x, _y} -> process2(index + 1, list, count, sum)
+      end
+    end
+  end
+end
+
+[first | rest] =
+  input
+  |> Kino.Input.read()
+  |> String.graphemes()
+
+list = [first | rest] ++ [first]
+```
+
+## Part 01
+
+```elixir
+Utils.process(0, list, 0)
+```
+
+## Part 02
+
+```elixir
+Utils.process2(0, list, div(Enum.count(list), 2), 0) * 2
+```

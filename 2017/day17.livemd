@@ -1,0 +1,37 @@
+# Day 17
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def process(list, _, _, 2018), do: list
+
+  def process(list, step, current, index) do
+    list = List.insert_at(list, current + 1, index)
+    process(list, step, rem(current + step, Enum.count(list)) + 1, index + 1)
+  end
+
+  def part2(_step, _current, value, 50_000_001), do: value
+
+  def part2(step, current, value, index) do
+    next_index = rem(step + current, index) + 1
+    value = if next_index == 1, do: index, else: value
+    part2(step, next_index, value, index + 1)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+list = Utils.process([], 369, 0, 0)
+index = Enum.find_index(list, &(&1 == 2017))
+
+Enum.at(list, index + 1)
+```
+
+## Part 02
+
+```elixir
+Utils.part2(369, 0, 0, 1)
+```

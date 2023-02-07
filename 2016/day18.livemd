@@ -1,0 +1,72 @@
+# Day 18
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(row) do
+    row
+    |> String.graphemes()
+    |> Enum.map(&(&1 == "."))
+  end
+
+  def process(_row, index, goal, safe_count) when index == goal, do: safe_count
+
+  def process(row, index, goal, safe_count) do
+    row
+    |> Enum.with_index()
+    |> Enum.reduce([], fn {_, index}, acc ->
+      [
+        case {
+          if(index > 0, do: Enum.at(row, index - 1), else: true),
+          Enum.at(row, index),
+          Enum.at(row, index + 1, true)
+        } do
+          {false, false, true} -> false
+          {true, false, false} -> false
+          {false, true, true} -> false
+          {true, true, false} -> false
+          _ -> true
+        end
+        | acc
+      ]
+    end)
+    |> Enum.reverse()
+    |> process(index + 1, goal, safe_count + Enum.count(row, &(&1 == true)))
+  end
+
+  def display(row) do
+    Enum.each(row, fn char -> if char, do: IO.write("."), else: IO.write("^") end)
+    IO.write("\n")
+    row
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input =
+  "^^.^..^.....^..^..^^...^^.^....^^^.^.^^....^.^^^...^^^^.^^^^.^..^^^^.^^.^.^.^.^.^^...^^..^^^..^.^^^^"
+
+input
+|> Utils.parse()
+|> Utils.process(0, 40, 0)
+```
+
+## Part 02
+
+```elixir
+input =
+  "^^.^..^.....^..^..^^...^^.^....^^^.^.^^....^.^^^...^^^^.^^^^.^..^^^^.^^.^.^.^.^.^^...^^..^^^..^.^^^^"
+
+input
+|> Utils.parse()
+|> Utils.process(0, 400_000, 0)
+```

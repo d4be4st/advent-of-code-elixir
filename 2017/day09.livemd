@@ -1,0 +1,72 @@
+# Day 09
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def find_groups([], _, _, groups, garbage_count), do: {groups, garbage_count}
+
+  def find_groups(["!", _ | rest], garbage, group, groups, garbage_count) do
+    find_groups(rest, garbage, group, groups, garbage_count)
+  end
+
+  def find_groups(["<" | rest], false, group, groups, garbage_count) do
+    find_groups(rest, true, group, groups, garbage_count)
+  end
+
+  def find_groups([">" | rest], true, group, groups, garbage_count) do
+    find_groups(rest, false, group, groups, garbage_count)
+  end
+
+  def find_groups(["{" | rest], false, group, groups, garbage_count) do
+    find_groups(rest, false, group + 1, groups, garbage_count)
+  end
+
+  def find_groups(["}" | rest], false, group, groups, garbage_count) do
+    find_groups(rest, false, group - 1, [group | groups], garbage_count)
+  end
+
+  def find_groups([_ | rest], true, group, groups, garbage_count) do
+    find_groups(rest, true, group, groups, garbage_count + 1)
+  end
+
+  def find_groups([_ | rest], false, group, groups, garbage_count) do
+    find_groups(rest, false, group, groups, garbage_count)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.graphemes()
+|> Utils.find_groups(false, 0, [], 0)
+|> Kernel.elem(0)
+|> Enum.sum()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.graphemes()
+|> Utils.find_groups(false, 0, [], 0)
+|> Kernel.elem(1)
+```

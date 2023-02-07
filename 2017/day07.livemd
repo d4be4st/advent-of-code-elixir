@@ -1,0 +1,118 @@
+# Day 07
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Tree do
+  def build(nodes) do
+    nodes
+    |> Enum.reduce(%{}, fn line, tree ->
+      line
+      |> String.split(" -> ")
+      |> add_node(tree)
+    end)
+  end
+
+  def add_node([name_weight, children], tree) do
+    {name, weight} = name_weight(name_weight)
+    children = String.split(children, ", ")
+
+    tree =
+      Map.update(tree, name, %{weight: weight, parent: nil, children: children}, fn node ->
+        node
+        |> Map.put(:weight, weight)
+        |> Map.put(:children, children)
+      end)
+
+    children
+    |> Enum.reduce(tree, fn child, tree ->
+      Map.update(tree, child, %{weight: nil, parent: name, children: []}, fn node ->
+        Map.put(node, :parent, name)
+      end)
+    end)
+  end
+
+  def add_node([name_weight], tree) do
+    {name, weight} = name_weight(name_weight)
+
+    Map.update(tree, name, %{weight: weight, parent: nil, children: []}, fn node ->
+      node
+      |> Map.put(:weight, weight)
+    end)
+  end
+
+  def name_weight(name_weight) do
+    [name, weight] = String.split(name_weight, " ")
+    weight = String.slice(weight, 1..-2) |> String.to_integer()
+    {name, weight}
+  end
+
+  def calculate_weights(tree, node) do
+    children = get_in(tree, [node, :children])
+
+    tree =
+      children
+      |> Enum.reduce(tree, fn child, tree -> calculate_weights(tree, child) end)
+
+    children_weights =
+      Enum.map(children, fn child ->
+        get_in(tree, [child, :children_sum]) || 0
+      end)
+
+    if Enum.uniq(children_weights) |> Enum.count() > 1 do
+      IO.inspect(children_weights, charlists: :as_lists)
+      Enum.each(children, fn child -> IO.inspect(get_in(tree, [child, :weight])) end)
+
+      throw(
+        "Find non unique weight then (current_weight - (unique_children_weight - other_children_weight))"
+      )
+    end
+
+    put_in(
+      tree,
+      [node, :children_sum],
+      Enum.sum(children_weights) + get_in(tree, [node, :weight])
+    )
+  end
+end
+
+tree =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Tree.build()
+
+# {tree["nqqxz"], tree["dfewulo"], tree["qsrfkq"]}
+# {tree["jrkbh"], tree["hyyeb"], tree["abwmmuw"]}
+```
+
+## Part 01
+
+```elixir
+root =
+  tree
+  |> Enum.find(fn {_name, attributes} -> attributes[:parent] == nil end)
+  |> Kernel.elem(0)
+```
+
+## Part 02
+
+```elixir
+Tree.calculate_weights(tree, root)
+```

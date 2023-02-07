@@ -1,0 +1,86 @@
+# Day 11
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.text("input")
+```
+
+## Shared
+
+```elixir
+defmodule Util do
+  def valid?(charlist) do
+    straight =
+      charlist
+      |> Enum.chunk_every(3, 1, :discard)
+      |> Enum.find(fn [x1, x2, x3] -> x1 + 1 == x2 && x3 - 1 == x2 end)
+
+    double =
+      charlist
+      |> Enum.chunk_by(fn x -> x end)
+      |> Enum.map(fn x -> Enum.count(x) end)
+      |> Enum.count(fn x -> x == 2 end)
+
+    straight != nil && double > 1
+  end
+
+  def next_password(charlist) do
+    [h | t] = charlist
+    new_h = if Enum.member?([8, 11, 14], rem(h + 1, 26)), do: rem(h + 2, 26), else: rem(h + 1, 26)
+
+    if new_h == 0 do
+      [new_h | next_password(t)]
+    else
+      [new_h | t]
+    end
+  end
+
+  def find_next_valid_password(password) do
+    next_password = next_password(password)
+
+    if valid?(Enum.reverse(next_password)) do
+      next_password
+    else
+      find_next_valid_password(next_password)
+    end
+  end
+end
+```
+
+## Part 01
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.to_charlist()
+|> Enum.map(&(&1 - 97))
+|> Enum.reverse()
+|> Util.find_next_valid_password()
+|> Enum.reverse()
+|> Enum.map(&(&1 + 97))
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.to_charlist()
+|> Enum.map(&(&1 - 97))
+|> Enum.reverse()
+|> Util.find_next_valid_password()
+|> Util.find_next_valid_password()
+|> Enum.reverse()
+|> Enum.map(&(&1 + 97))
+```

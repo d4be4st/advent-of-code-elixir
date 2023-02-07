@@ -1,0 +1,64 @@
+# Day 22
+
+## Preparing
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Battle do
+  defstruct [
+    :player_hp,
+    :player_mana,
+    :player_effects,
+    :player_armor,
+    :boss_hp,
+    :boss_damage,
+    :spent_mana
+  ]
+
+  @spells [
+    :magic_missle,
+    :drain,
+    :shield,
+    :poison,
+    :recharge
+  ]
+
+  def run(battle = %Battle{}) do
+    battle = run_player_round(battle)
+
+    if battle.boss_hp > 0 do
+      # {player_hp} = run_boss_round()
+    else
+      battle.spent_mana
+    end
+  end
+
+  def run_player_round(battle = %Battle{}) do
+    spell = next_spell([], battle.effects)
+
+    %Battle{
+      battle
+      | boss_hp: battle.boss_hp - 10,
+        spent_mana: battle.spent_mana + 30
+    }
+  end
+end
+
+battle = %Battle{boss_hp: 5, spent_mana: 0}
+Battle.run_player_round(battle)
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

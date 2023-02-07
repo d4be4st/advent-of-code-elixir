@@ -1,0 +1,91 @@
+# Day 07
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def run(lines) do
+    process(lines, [], %{["/"] => 0})
+  end
+
+  def process([], _, os), do: os
+
+  def process([line | lines], pwd, os) do
+    {pwd, os} =
+      line
+      |> String.split(" ")
+      |> parse(pwd, os)
+
+    process(lines, pwd, os)
+  end
+
+  def parse(["$", "ls"], pwd, os), do: {pwd, os}
+  def parse(["$", "cd", ".."], [_ | pwd], os), do: {pwd, os}
+  def parse(["$", "cd", dir], pwd, os), do: {[dir | pwd], os}
+
+  def parse(["dir", dir], pwd, os) do
+    {pwd, Map.put(os, [dir | pwd], 0)}
+  end
+
+  def parse([size, _file], pwd, os) do
+    size = String.to_integer(size)
+    os = update_size(os, pwd, size)
+    {pwd, os}
+  end
+
+  def update_size(os, [], _), do: os
+
+  def update_size(os, [_ | rest] = pwd, size) do
+    os
+    |> Map.update(pwd, size, &(&1 + size))
+    |> update_size(rest, size)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Utils.run()
+|> Map.values()
+|> Enum.filter(fn v -> v <= 100_000 end)
+|> Enum.sum()
+```
+
+## Part 02
+
+```elixir
+max = 70_000_000
+needed = 30_000_000
+
+os =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Utils.run()
+
+used = os[["/"]]
+unused = max - used
+
+os
+|> Map.values()
+|> Enum.sort()
+|> Enum.find(fn size -> unused + size >= needed end)
+```

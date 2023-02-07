@@ -1,0 +1,68 @@
+# Day 06
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def line_frequency(map, line) do
+    line
+    |> String.graphemes()
+    |> Enum.with_index()
+    |> Enum.reduce(map, fn {char, index}, acc ->
+      Map.update(acc, {index, char}, 1, &(&1 + 1))
+    end)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(%{}, fn line, map ->
+  Utils.line_frequency(map, line)
+end)
+|> Enum.group_by(fn {{index, _char}, _v} -> index end)
+|> Enum.reduce([], fn {_index, array}, acc ->
+  {{_, char}, _} = Enum.max_by(array, fn {_, v} -> v end)
+
+  [char | acc]
+end)
+|> Enum.reverse()
+|> Enum.join()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(%{}, fn line, map ->
+  Utils.line_frequency(map, line)
+end)
+|> Enum.group_by(fn {{index, _char}, _v} -> index end)
+|> Enum.reduce([], fn {_index, array}, acc ->
+  {{_, char}, _} = Enum.min_by(array, fn {_, v} -> v end)
+
+  [char | acc]
+end)
+|> Enum.reverse()
+|> Enum.join()
+```

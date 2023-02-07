@@ -1,0 +1,54 @@
+# Day 15
+
+## Input
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def tick(time, discs) do
+    if ball_passed?(time, discs) do
+      time
+    else
+      tick(time + 1, discs)
+    end
+  end
+
+  def ball_passed?(time, discs) do
+    Enum.all?(discs, fn {index, size, start_position} ->
+      rem(time + start_position + index, size) == 0
+    end)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input = [
+  {1, 13, 10},
+  {2, 17, 15},
+  {3, 19, 17},
+  {4, 7, 1},
+  {5, 5, 0},
+  {6, 3, 1}
+]
+
+Utils.tick(0, input)
+```
+
+## Part 02
+
+```elixir
+input = [
+  {1, 13, 10},
+  {2, 17, 15},
+  {3, 19, 17},
+  {4, 7, 1},
+  {5, 5, 0},
+  {6, 3, 1},
+  {7, 11, 0}
+]
+
+Utils.tick(0, input)
+```

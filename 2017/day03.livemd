@@ -1,0 +1,65 @@
+# Day 03
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def find({x, y, _direction, _times}, index, goal) when index == goal do
+    manhattan(x, y)
+  end
+
+  def find({x, y, direction, times}, index, goal) do
+    find(next_point(x, y, direction, times), index + 1, goal)
+  end
+
+  def map({x, y, direction, times}, map, goal) do
+    sum = adjeson(map, x, y) |> Enum.sum()
+
+    if sum > goal do
+      sum
+    else
+      next_point(x, y, direction, times)
+      |> map(Map.put(map, {x, y}, sum), goal)
+    end
+  end
+
+  def adjeson(map, x, y) do
+    [
+      Map.get(map, {x - 1, y - 1}, 0),
+      Map.get(map, {x - 1, y}, 0),
+      Map.get(map, {x - 1, y + 1}, 0),
+      Map.get(map, {x, y - 1}, 0),
+      Map.get(map, {x, y + 1}, 0),
+      Map.get(map, {x + 1, y - 1}, 0),
+      Map.get(map, {x + 1, y}, 0),
+      Map.get(map, {x + 1, y + 1}, 0)
+    ]
+  end
+
+  def manhattan(x, y), do: abs(y) + abs(x)
+
+  def next_point(x, y, "R", 0), do: {x + 1, y, "U", (abs(x + 1) - 1) * 2}
+  def next_point(x, y, "R", times), do: {x + 1, y, "R", times - 1}
+
+  def next_point(x, y, "U", 0), do: {x, y - 1, "L", abs(y - 1) * 2 - 1}
+  def next_point(x, y, "U", times), do: {x, y - 1, "U", times - 1}
+
+  def next_point(x, y, "L", 0), do: {x - 1, y, "D", abs(x - 1) * 2 - 1}
+  def next_point(x, y, "L", times), do: {x - 1, y, "L", times - 1}
+
+  def next_point(x, y, "D", 0), do: {x, y + 1, "R", abs(y + 1) * 2}
+  def next_point(x, y, "D", times), do: {x, y + 1, "D", times - 1}
+end
+```
+
+## Part 01
+
+```elixir
+Utils.find({0, 0, "R", 0}, 1, 347_991)
+```
+
+## Part 02
+
+```elixir
+Utils.map({1, 0, "U", 0}, %{{0, 0} => 1}, 347_991)
+```

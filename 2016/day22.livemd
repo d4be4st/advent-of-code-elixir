@@ -1,0 +1,103 @@
+# Day 22
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def prepare(line, map) do
+    ["/dev/grid/node-" <> node, size, used, available, percentage] =
+      String.split(line, " ", trim: true)
+
+    ["x" <> x, "y" <> y] = String.split(node, "-")
+
+    Map.put(map, {String.to_integer(x), String.to_integer(y)}, %{
+      size: String.to_integer(String.trim_trailing(size, "T")),
+      used: String.to_integer(String.trim_trailing(used, "T")),
+      available: String.to_integer(String.trim_trailing(available, "T")),
+      percentage: String.to_integer(String.trim_trailing(percentage, "%"))
+    })
+  end
+
+  def draw(map) do
+    {max_x, max_y} =
+      Map.keys(map)
+      |> Enum.max()
+
+    Enum.each(0..max_y, fn y ->
+      IO.write(y |> Integer.to_string() |> String.pad_leading(2))
+
+      Enum.each(0..max_x, fn x ->
+        case {x, y} do
+          {0, 0} ->
+            IO.write(" !")
+
+          {^max_x, 0} ->
+            IO.write(" G")
+
+          _ ->
+            case get_in(map, [{x, y}, :percentage]) do
+              0 -> IO.write(" _")
+              n when n in 1..90 -> IO.write(" .")
+              n when n in 91..100 -> IO.write(" #")
+            end
+        end
+      end)
+
+      IO.write("\n")
+    end)
+
+    Enum.each(-1..max_x, fn x -> IO.write(x |> Integer.to_string() |> String.pad_leading(2)) end)
+  end
+
+  def viable?(%{used: x_used}, %{available: y_available})
+      when x_used > 0 and x_used <= y_available,
+      do: true
+
+  def viable?(_, _), do: false
+end
+```
+
+## Part 01
+
+```elixir
+map =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce(%{}, &Utils.prepare/2)
+
+for {x_coord, x_details} <- map,
+    {y_coord, y_details} <- map,
+    x_coord != y_coord,
+    Utils.viable?(x_details, y_details) do
+  {x_coord, y_coord}
+end
+|> Enum.count()
+```
+
+## Part 02
+
+```elixir
+map =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce(%{}, &Utils.prepare/2)
+  |> Utils.draw()
+
+17 + 22 + 37 + 5 * 36
+```

@@ -1,0 +1,127 @@
+# Day 15
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(line, {ingredients, calories_list}) do
+    [_ingredient, details] = String.split(line, ": ")
+
+    [
+      "capacity " <> capacity,
+      "durability " <> durability,
+      "flavor " <> flavor,
+      "texture " <> texture,
+      "calories " <> calories
+    ] = String.split(details, ", ")
+
+    {[
+       [
+         String.to_integer(capacity),
+         String.to_integer(durability),
+         String.to_integer(flavor),
+         String.to_integer(texture)
+       ]
+       | ingredients
+     ], [String.to_integer(calories) | calories_list]}
+  end
+
+  def score(combination, ingredients) do
+    combination
+    |> Enum.zip(ingredients)
+    |> Enum.map(fn {count, ingredients} ->
+      Enum.map(ingredients, fn ingredient ->
+        count * ingredient
+      end)
+    end)
+    |> Enum.zip()
+    |> Enum.map(fn tuple ->
+      res =
+        tuple
+        |> Tuple.to_list()
+        |> Enum.sum()
+
+      if res < 0, do: 0, else: res
+    end)
+    |> Enum.reduce(1, &*/2)
+  end
+
+  def combinations2(count) do
+    for x1 <- 0..count,
+        x2 <- 0..count,
+        x1 + x2 == count,
+        do: [x1, x2]
+  end
+
+  def combinations4(count) do
+    for x1 <- 0..count,
+        x2 <- 0..count,
+        x3 <- 0..count,
+        x4 <- 0..count,
+        x1 + x2 + x3 + x4 == count,
+        do: [x1, x2, x3, x4]
+  end
+end
+```
+
+## Part 01
+
+```elixir
+{ingedients, calories} =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce({[], []}, fn line, acc ->
+    Utils.parse(line, acc)
+  end)
+
+100
+|> Utils.combinations4()
+|> Enum.map(fn combination ->
+  Utils.score(combination, ingedients)
+end)
+|> Enum.max()
+```
+
+## Part 02
+
+```elixir
+{ingedients, calories} =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce({[], []}, fn line, acc ->
+    Utils.parse(line, acc)
+  end)
+
+100
+|> Utils.combinations4()
+|> Enum.map(fn combination ->
+  score = Utils.score(combination, ingedients)
+
+  calories =
+    Enum.zip(combination, calories)
+    |> Enum.map(fn {count, calories} ->
+      count * calories
+    end)
+    |> Enum.sum()
+
+  {calories, score}
+end)
+|> Enum.filter(fn {calories, _} -> calories == 500 end)
+|> Enum.max_by(fn {_, score} -> score end)
+```

@@ -1,0 +1,103 @@
+# Day 10
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse_bot(line, tree) do
+    %{"bot" => bot, "target_high" => target_high, "target_low" => target_low} =
+      Regex.named_captures(
+        ~r/(?<bot>.*) gives low to (?<target_low>.*) and high to (?<target_high>.*)/,
+        line
+      )
+
+    Map.put(tree, bot, %{target_low: target_low, target_high: target_high, captures: []})
+  end
+
+  def parse_value(line, tree) do
+    %{"value" => value, "target" => target} =
+      Regex.named_captures(~r/value (?<value>\d+) goes to (?<target>.*)/, line)
+
+    give(tree, target, String.to_integer(value))
+  end
+
+  def give(tree, "output 0", value), do: Map.update(tree, "outputs", [value], &[value | &1])
+  def give(tree, "output 1", value), do: Map.update(tree, "outputs", [value], &[value | &1])
+  def give(tree, "output 2", value), do: Map.update(tree, "outputs", [value], &[value | &1])
+  def give(tree, "output" <> _output, _value), do: tree
+
+  def give(tree, bot, value) do
+    tree =
+      Map.update!(tree, bot, fn content ->
+        %{content | captures: [value | Map.get(content, :captures)]}
+      end)
+
+    %{target_low: target_low, target_high: target_high, captures: captrues} = Map.get(tree, bot)
+
+    case captrues do
+      [value1, value2] ->
+        {low, high} = Enum.min_max([value1, value2])
+
+        tree
+        |> give(target_low, low)
+        |> give(target_high, high)
+
+      _ ->
+        tree
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+
+tree =
+  instructions
+  |> Enum.filter(&String.starts_with?(&1, "bot"))
+  |> Enum.reduce(%{}, &Utils.parse_bot(&1, &2))
+
+instructions
+|> Enum.filter(&String.starts_with?(&1, "value"))
+|> Enum.reduce(tree, &Utils.parse_value(&1, &2))
+|> Enum.find(fn {_k, v} -> v[:captures] == [17, 61] end)
+```
+
+## Part 02
+
+```elixir
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+
+tree =
+  instructions
+  |> Enum.filter(&String.starts_with?(&1, "bot"))
+  |> Enum.reduce(%{}, &Utils.parse_bot(&1, &2))
+
+instructions
+|> Enum.filter(&String.starts_with?(&1, "value"))
+|> Enum.reduce(tree, &Utils.parse_value(&1, &2))
+|> Map.get("outputs")
+|> Enum.reduce(1, &*/2)
+```

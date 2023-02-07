@@ -1,0 +1,58 @@
+# Day 19
+
+## Shared
+
+```elixir
+defmodule Utils1 do
+  def process([first, _], []), do: first
+
+  def process([], passed) do
+    process(Enum.reverse(passed), [])
+  end
+
+  def process([single], passed) do
+    process([single | Enum.reverse(passed)], [])
+  end
+
+  def process([first, _ | rest], passed) do
+    process(rest, [first | passed])
+  end
+end
+
+defmodule Utils2 do
+  def process({[left], []}, _right, 1, 1), do: left
+
+  def process(left, right, count_left, count_right) when count_left == count_right do
+    if rem(count_left, 1000) == 0, do: IO.inspect(count_left)
+    {{:value, first_left}, left} = :queue.out(left)
+    right = :queue.drop(right)
+    right = :queue.in(first_left, right)
+    process(left, right, count_left - 1, count_right)
+  end
+
+  def process(left, right, count_left, count_right) when count_left < count_right do
+    {{:value, first_left}, left} = :queue.out(left)
+    right = :queue.drop(right)
+    {{:value, second_right}, right} = :queue.out(right)
+    right = :queue.in(first_left, right)
+    left = :queue.in(second_right, left)
+    process(left, right, count_left, count_right - 1)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+# Utils1.process(1..3012210 |> Enum.to_list(), [])
+```
+
+## Part 02
+
+```elixir
+# size = 5
+size = 3_012_210
+left = 1..div(size, 2) |> Enum.to_list() |> :queue.from_list()
+right = (div(size, 2) + 1)..size |> Enum.to_list() |> :queue.from_list()
+Utils2.process(left, right, :queue.len(left), :queue.len(right))
+```

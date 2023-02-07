@@ -1,0 +1,73 @@
+# Day 20
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+divisors = fn number ->
+  1..trunc(:math.sqrt(number))
+  |> Enum.flat_map(fn
+    x when rem(number, x) != 0 -> []
+    x when x != div(number, x) -> [x, div(number, x)]
+    x -> [x]
+  end)
+end
+```
+
+## Part 01
+
+```elixir
+target = input |> Kino.Input.read() |> String.to_integer()
+
+Stream.unfold(1, fn index ->
+  score =
+    divisors.(index)
+    |> Enum.map(fn number -> number * 10 end)
+    |> Enum.sum()
+
+  if rem(index, 1000) == 0, do: IO.inspect(index)
+  # IO.inspect {index, score}
+  if score >= target do
+    IO.inspect(index)
+    nil
+  else
+    {index, index + 2}
+  end
+end)
+|> Stream.run()
+```
+
+## Part 02
+
+```elixir
+target = input |> Kino.Input.read() |> String.to_integer()
+
+Stream.unfold(1, fn index ->
+  score =
+    divisors.(index)
+    |> Enum.filter(fn divisor -> div(index, divisor) < 50 end)
+    |> Enum.map(fn number -> number * 11 end)
+    |> Enum.sum()
+
+  if rem(index, 1000) == 0, do: IO.inspect(index)
+  # IO.inspect {index, score}
+  if score >= target do
+    IO.inspect(index)
+    nil
+  else
+    {index, index + 2}
+  end
+end)
+|> Stream.run()
+```

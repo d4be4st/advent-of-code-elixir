@@ -1,0 +1,68 @@
+# Day 25
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def find(input) do
+    binary = Integer.to_string(input, 2) |> String.graphemes()
+
+    binary
+    |> Enum.chunk_by(fn x -> x end)
+    |> Enum.count() == Enum.count(binary)
+  end
+
+  def loop(index, base) do
+    if find(base + index) do
+      index
+    else
+      loop(index + 1, base)
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+
+[_, x, _] =
+  input
+  |> Enum.at(1)
+  |> String.split(" ")
+
+[_, y, _] =
+  input
+  |> Enum.at(2)
+  |> String.split(" ")
+
+base = String.to_integer(x) * String.to_integer(y)
+index = 0
+
+Utils.loop(index, base)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

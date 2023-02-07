@@ -1,0 +1,75 @@
+# Day 16
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+my_compounds = %{
+  "children" => 3,
+  "cats" => 7,
+  "samoyeds" => 2,
+  "pomeranians" => 3,
+  "akitas" => 0,
+  "vizslas" => 0,
+  "goldfish" => 5,
+  "trees" => 3,
+  "cars" => 2,
+  "perfumes" => 1
+}
+```
+
+```elixir
+aunts =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", trum: true)
+  |> Enum.reduce(%{}, fn line, acc ->
+    [aunt] = Regex.run(~r/Sue \d+/, line)
+
+    compounds =
+      Regex.scan(~r/(\w+): (\d+)/, line, capture: :all_but_first)
+      |> Enum.reduce(%{}, fn [k, v], acc -> Map.put(acc, k, String.to_integer(v)) end)
+
+    Map.put(acc, aunt, compounds)
+  end)
+```
+
+## Part 01
+
+```elixir
+aunts
+|> Enum.find(fn {_aunt, compounds} ->
+  {checking_compounds, _} = Map.split(my_compounds, Map.keys(compounds))
+  checking_compounds == compounds
+end)
+```
+
+## Part 02
+
+```elixir
+aunts
+|> Enum.find(fn {_aunt, compounds} ->
+  Enum.all?(compounds, fn {compound, value} ->
+    case compound do
+      "cats" -> value > Map.get(my_compounds, "cats")
+      "trees" -> value > Map.get(my_compounds, "trees")
+      "pomeranians" -> value < Map.get(my_compounds, "pomeranians")
+      "goldfish" -> value < Map.get(my_compounds, "goldfish")
+      c -> Map.get(my_compounds, c) == value
+    end
+  end)
+end)
+```

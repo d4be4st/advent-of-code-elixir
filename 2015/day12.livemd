@@ -1,0 +1,74 @@
+# Day 12
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"},
+  {:jason, "~> 1.4"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Part 01
+
+```elixir
+defmodule Utils do
+  def parse_value(map) when is_map(map) do
+    map
+    |> Enum.map(fn {_key, value} -> parse_value(value) end)
+    |> Enum.sum()
+  end
+
+  def parse_value(list) when is_list(list) do
+    list
+    |> Enum.map(&parse_value/1)
+    |> Enum.sum()
+  end
+
+  def parse_value(x) when is_integer(x), do: x
+
+  def parse_value(s) when is_binary(s), do: 0
+end
+
+input
+|> Kino.Input.read()
+|> Jason.decode!()
+|> Utils.parse_value()
+```
+
+## Part 02
+
+```elixir
+defmodule Utils do
+  def parse_value(map) when is_map(map) do
+    if Enum.any?(Map.values(map), fn x -> x == "red" end) do
+      0
+    else
+      map
+      |> Enum.map(fn {_key, value} -> parse_value(value) end)
+      |> Enum.sum()
+    end
+  end
+
+  def parse_value(list) when is_list(list) do
+    list
+    |> Enum.map(&parse_value/1)
+    |> Enum.sum()
+  end
+
+  def parse_value(x) when is_integer(x), do: x
+
+  def parse_value(s) when is_binary(s), do: 0
+end
+
+input
+|> Kino.Input.read()
+|> Jason.decode!()
+|> Utils.parse_value()
+```

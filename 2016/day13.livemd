@@ -1,0 +1,73 @@
+# Day 13
+
+## Shared
+
+```elixir
+defmodule Utils do
+  require Integer
+  @fav 1358
+
+  def search1(queue, goal, traversed) do
+    {{:value, {current, steps}}, queue} = :queue.out(queue)
+
+    if current == goal do
+      steps
+    else
+      traversed = MapSet.put(traversed, current)
+      queue = next_queue(queue, current, traversed, steps)
+      search1(queue, goal, traversed)
+    end
+  end
+
+  def search2(queue, goal, traversed) do
+    {{:value, {current, steps}}, queue} = :queue.out(queue)
+
+    if steps > goal do
+      Enum.count(traversed)
+    else
+      traversed = MapSet.put(traversed, current)
+      queue = next_queue(queue, current, traversed, steps)
+      search2(queue, goal, traversed)
+    end
+  end
+
+  def next_queue(queue, current, traversed, steps) do
+    next_coords(current)
+    |> Enum.filter(&(!MapSet.member?(traversed, &1)))
+    |> Enum.map(&{&1, steps + 1})
+    |> Enum.reduce(queue, &:queue.in(&1, &2))
+  end
+
+  def next_coords({x, y}) do
+    [
+      {x, y - 1},
+      {x, y + 1},
+      {x - 1, y},
+      {x + 1, y}
+    ]
+    |> Enum.filter(&valid?/1)
+  end
+
+  def valid?({x, y}) when x >= 0 and y >= 0 do
+    (x * x + 3 * x + 2 * x * y + y + y * y + @fav)
+    |> Integer.to_string(2)
+    |> String.graphemes()
+    |> Enum.count(&(&1 == "1"))
+    |> Integer.is_even()
+  end
+
+  def valid?(_), do: false
+end
+```
+
+## Part 01
+
+```elixir
+Utils.search1(:queue.from_list([{{1, 1}, 0}]), {31, 39}, MapSet.new())
+```
+
+## Part 02
+
+```elixir
+Utils.search2(:queue.from_list([{{1, 1}, 0}]), 50, MapSet.new())
+```

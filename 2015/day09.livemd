@@ -1,0 +1,92 @@
+# Day 09
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Util do
+  def parse(cities, line) do
+    [city1, "to", city2, "=", distance] = String.split(line)
+
+    value = String.to_integer(distance)
+
+    cities
+    |> Map.put({city1, city2}, value)
+    |> Map.put({city2, city1}, value)
+  end
+
+  def gather_cities(cities, line) do
+    [city1, "to", city2, "=", _] = String.split(line)
+
+    cities
+    |> MapSet.put(city1)
+    |> MapSet.put(city2)
+  end
+
+  def permutations([]), do: [[]]
+
+  def permutations(list),
+    do: for(elem <- list, rest <- permutations(list -- [elem]), do: [elem | rest])
+
+  def traverse(cities, distances) do
+    cities
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.map(fn [city1, city2] ->
+      distances[{city1, city2}]
+    end)
+    |> Enum.sum()
+  end
+end
+```
+
+```elixir
+lines =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+
+distances =
+  lines
+  |> Enum.reduce(%{}, fn line, cities -> Util.parse(cities, line) end)
+
+cities =
+  lines
+  |> Enum.reduce(MapSet.new(), fn line, cities -> Util.gather_cities(cities, line) end)
+```
+
+## Part 01
+
+```elixir
+cities
+|> MapSet.to_list()
+|> Util.permutations()
+|> Enum.map(fn cities ->
+  Util.traverse(cities, distances)
+end)
+|> Enum.min()
+```
+
+## Part 02
+
+```elixir
+cities
+|> MapSet.to_list()
+|> Util.permutations()
+|> Enum.map(fn cities ->
+  Util.traverse(cities, distances)
+end)
+|> Enum.max()
+```

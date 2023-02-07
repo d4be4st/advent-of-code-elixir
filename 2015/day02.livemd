@@ -1,0 +1,51 @@
+# Day 02
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Part 1
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(fn line ->
+  [length, width, heigth] =
+    line
+    |> String.split("x")
+    |> Enum.map(&String.to_integer/1)
+
+  sides = [length * width, width * heigth, length * heigth]
+  Enum.sum(Enum.map(sides, &(&1 * 2))) + Enum.min(sides)
+end)
+|> Enum.sum()
+```
+
+## Part 2
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(fn line ->
+  sides =
+    line
+    |> String.split("x")
+    |> Enum.map(&String.to_integer/1)
+
+  [min_1, min_2, other] = Enum.sort(sides)
+  min_1 + min_1 + min_2 + min_2 + min_1 * min_2 * other
+end)
+|> Enum.sum()
+```

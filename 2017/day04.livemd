@@ -1,0 +1,60 @@
+# Day 04
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def valid?(passphrase) do
+    passphrase
+    |> String.split(" ")
+    |> Enum.reduce(%{}, fn word, acc ->
+      Map.update(acc, word, 1, &(&1 + 1))
+    end)
+    |> Enum.all?(fn {_, v} -> v == 1 end)
+  end
+
+  def valid_stronger?(passphrase) do
+    passphrase
+    |> String.split(" ")
+    |> Enum.reduce(%{}, fn word, acc ->
+      word = word |> String.graphemes() |> Enum.sort() |> Enum.join()
+      Map.update(acc, word, 1, &(&1 + 1))
+    end)
+    |> Enum.all?(fn {_, v} -> v == 1 end)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(&Utils.valid?/1)
+|> Enum.count(&(&1 == true))
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(&Utils.valid_stronger?/1)
+|> Enum.count(&(&1 == true))
+```

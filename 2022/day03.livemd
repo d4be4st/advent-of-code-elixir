@@ -1,0 +1,90 @@
+# Day 03
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def split(graphemes) do
+    count = Enum.count(graphemes)
+    Enum.split(graphemes, div(count, 2))
+  end
+
+  def find({first, second}) do
+    Enum.find(first, fn first_char ->
+      Enum.member?(second, first_char)
+    end)
+  end
+
+  def find_in_chunks(chunks) do
+    chunks
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {chunk, index}, acc ->
+      Enum.reduce(chunk, acc, fn char, acc ->
+        Map.update(acc, char, List.replace_at([false, false, false], index, true), fn a ->
+          List.replace_at(a, index, true)
+        end)
+      end)
+    end)
+    |> Map.filter(fn {_, v} -> v == [true, true, true] end)
+  end
+
+  def priority(<<char>>) do
+    case char do
+      x when x in ?a..?z -> char - ?a + 1
+      x when x in ?A..?Z -> char - ?A + 27
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(0, fn line, sum ->
+  priority =
+    line
+    |> String.graphemes()
+    |> Utils.split()
+    |> Utils.find()
+    |> Utils.priority()
+
+  priority + sum
+end)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.chunk_every(3)
+|> Enum.reduce(0, fn chunk, sum ->
+  priority =
+    chunk
+    |> Enum.map(&String.graphemes/1)
+    |> Utils.find_in_chunks()
+    |> Map.keys()
+    |> List.first()
+    |> Utils.priority()
+
+  sum + priority
+end)
+```

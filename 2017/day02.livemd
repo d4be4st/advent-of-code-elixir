@@ -1,0 +1,54 @@
+# Day 02
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(0, fn line, sum ->
+  {min, max} =
+    line
+    |> String.split("\t", trim: true)
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.min_max()
+
+  sum + max - min
+end)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(0, fn line, sum ->
+  numbers = String.split(line, "\t", trim: true)
+
+  for x <- numbers,
+      y <- numbers,
+      x = String.to_integer(x),
+      y = String.to_integer(y),
+      x != y,
+      rem(x, y) == 0 do
+    div(x, y)
+  end
+  |> List.first()
+  |> Kernel.+(sum)
+end)
+```

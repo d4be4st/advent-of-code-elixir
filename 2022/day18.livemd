@@ -1,0 +1,129 @@
+# Day 18
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(input) do
+    input
+    |> String.split("\n")
+    |> Enum.map(fn line ->
+      line
+      |> String.split(",")
+      |> Enum.map(&String.to_integer/1)
+    end)
+  end
+
+  def neighbors([x, y, z]) do
+    [
+      [x + 1, y, z],
+      [x - 1, y, z],
+      [x, y + 1, z],
+      [x, y - 1, z],
+      [x, y, z - 1],
+      [x, y, z + 1]
+    ]
+  end
+end
+
+defmodule Part1 do
+  def run(cubes) do
+    process(cubes, cubes, 0)
+  end
+
+  def process([], _, count), do: count
+
+  def process([cube | remaining], cubes, count) do
+    empty_sides =
+      Utils.neighbors(cube)
+      |> Enum.count(&(!Enum.member?(cubes, &1)))
+
+    process(remaining, cubes, count + empty_sides)
+  end
+end
+
+defmodule Part2 do
+  def run(cubes) do
+    {minx, maxx} = cubes |> Enum.map(&Enum.at(&1, 0)) |> Enum.min_max()
+    {miny, maxy} = cubes |> Enum.map(&Enum.at(&1, 1)) |> Enum.min_max()
+    {minz, maxz} = cubes |> Enum.map(&Enum.at(&1, 2)) |> Enum.min_max()
+
+    source = [minx - 1, miny - 1, minz - 1]
+
+    exterior =
+      bfs(
+        :queue.from_list([source]),
+        MapSet.new(),
+        cubes,
+        {(minx - 1)..(maxx + 1), (miny - 1)..(maxy + 1), (minz - 1)..(maxz + 1)}
+      )
+
+    cubes
+    |> Enum.map(fn cube ->
+      Utils.neighbors(cube)
+      |> Enum.count(&Enum.member?(exterior, &1))
+    end)
+    |> Enum.sum()
+  end
+
+  def bfs(queue, exterior, cubes, bounds) do
+    case :queue.out(queue) do
+      {{:value, cube}, queue} ->
+        cond do
+          MapSet.member?(exterior, cube) ->
+            bfs(queue, exterior, cubes, bounds)
+
+          true ->
+            exterior = MapSet.put(exterior, cube)
+
+            Utils.neighbors(cube)
+            |> Enum.filter(
+              &(not Enum.member?(cubes, &1) and not MapSet.member?(exterior, &1) and
+                  in_bounds(&1, bounds))
+            )
+            |> Enum.reduce(queue, &:queue.in/2)
+            |> bfs(exterior, cubes, bounds)
+        end
+
+      {:empty, _queue} ->
+        exterior
+    end
+  end
+
+  def in_bounds([x, y, z], {xbounds, ybounds, zbounds}) do
+    x in xbounds and y in ybounds and z in zbounds
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Part1.run()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Part2.run()
+```

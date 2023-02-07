@@ -1,0 +1,73 @@
+# Day 17
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def process1(queue, passcode) do
+    {{:value, {path, coordinate}}, queue} = :queue.out(queue)
+
+    if coordinate == {3, 3} do
+      path
+    else
+      hash(passcode <> path)
+      |> next_moves(coordinate)
+      |> Enum.reduce(queue, fn {direction, coordinate}, queue ->
+        :queue.in({path <> direction, coordinate}, queue)
+      end)
+      |> process1(passcode)
+    end
+  end
+
+  def process2({[], []}, paths, _passcode), do: paths
+
+  def process2(queue, paths, passcode) do
+    {{:value, {path, coordinate}}, queue} = :queue.out(queue)
+
+    if coordinate == {3, 3} do
+      process2(queue, [String.length(path) | paths], passcode)
+    else
+      hash(passcode <> path)
+      |> next_moves(coordinate)
+      |> Enum.reduce(queue, fn {direction, coordinate}, queue ->
+        :queue.in({path <> direction, coordinate}, queue)
+      end)
+      |> process2(paths, passcode)
+    end
+  end
+
+  def hash(passcode) do
+    :crypto.hash(:md5, passcode) |> Base.encode16(case: :lower)
+  end
+
+  def next_moves(hash, {x, y}) do
+    [up, down, left, right] =
+      String.slice(hash, 0, 4)
+      |> String.graphemes()
+      |> Enum.map(fn char -> char >= "b" && char <= "f" end)
+
+    [
+      up && y != 0 && {"U", {x, y - 1}},
+      down && y != 3 && {"D", {x, y + 1}},
+      left && x != 0 && {"L", {x - 1, y}},
+      right && x != 3 && {"R", {x + 1, y}}
+    ]
+    |> Enum.reject(&(&1 == false))
+  end
+end
+```
+
+## Part 01
+
+```elixir
+:queue.from_list([{"", {0, 0}}])
+|> Utils.process1("bwnlcvfs")
+```
+
+## Part 02
+
+```elixir
+:queue.from_list([{"", {0, 0}}])
+|> Utils.process2([], "bwnlcvfs")
+|> Enum.max()
+```

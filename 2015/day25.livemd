@@ -1,0 +1,51 @@
+# Day 25
+
+## Shared
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Utils do
+  def next_coord({x, y}) do
+    if y == 1 do
+      {1, x + 1}
+    else
+      {x + 1, y - 1}
+    end
+  end
+
+  def next_value(map, prev_coord) do
+    rem(Map.get(map, prev_coord) * 252_533, 33_554_393)
+  end
+
+  def new_field(map, coord) do
+    next_coord = next_coord(coord)
+    next_value = next_value(map, coord)
+    {Map.put(map, next_coord, next_value), next_coord}
+  end
+
+  def traverse(value, end_coord) do
+    traverse(%{{1, 1} => value}, {1, 1}, end_coord)
+  end
+
+  def traverse(map, coord, end_coord) when coord == end_coord, do: Map.get(map, coord)
+
+  def traverse(map, coord, end_coord) do
+    {map, next_coord} = new_field(map, coord)
+    traverse(map, next_coord, end_coord)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+Utils.traverse(20_151_125, {3029, 2947})
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

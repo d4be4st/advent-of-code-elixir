@@ -1,0 +1,105 @@
+# Day 24
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Math do
+  def permutations([]) do
+    [[]]
+  end
+
+  def permutations(list) do
+    for h <- list, t <- permutations(list -- [h]), do: [h | t]
+  end
+end
+```
+
+```elixir
+permutations =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.map(&String.to_integer/1)
+  |> Enum.sort()
+  |> Enum.reverse()
+  |> Math.permutations()
+```
+
+```elixir
+defmodule Util do
+  def chunk(array) do
+    1..Enum.count(array)
+    |> Enum.map(fn count -> Util.chunk_first_group(array, count, []) end)
+    |> Enum.filter(&(!is_nil(&1)))
+  end
+
+  def chunk_first_group([], _, _), do: nil
+
+  def chunk_first_group([number | array], 0, group1) do
+    group1 = [number | group1]
+    chunk_second_group(array, [], Enum.sum(group1), [group1])
+  end
+
+  def chunk_first_group([number | array], group_count, group1) do
+    chunk_first_group(array, group_count - 1, [number | group1])
+  end
+
+  def chunk_second_group([], group3, target_sum, groups), do: nil
+
+  def chunk_second_group([number | array], group2, target_sum, groups) do
+    group2 = [number | group2]
+    group_sum = Enum.sum(group2)
+
+    cond do
+      group_sum == target_sum -> chunk_third_group(array, [], target_sum, [group2 | groups])
+      group_sum > target_sum -> nil
+      group_sum < target_sum -> chunk_second_group(array, group2, target_sum, groups)
+    end
+  end
+
+  def chunk_third_group([], group3, target_sum, groups), do: nil
+
+  def chunk_third_group([number | array], group3, target_sum, groups) do
+    group3 = [number | group3]
+    group_sum = Enum.sum(group3)
+
+    cond do
+      group_sum == target_sum ->
+        [group3 | groups] |> Enum.reverse()
+
+      group_sum > target_sum ->
+        nil
+
+      group_sum < target_sum ->
+        chunk_third_group(array, group3, target_sum, groups)
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+Util.chunk([11, 9, 10, 8, 2, 7, 5, 4, 3, 1])
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

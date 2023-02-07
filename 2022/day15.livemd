@@ -1,0 +1,121 @@
+# Day 15
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(input) do
+    input
+    |> String.split("\n")
+    |> Enum.reduce({%{}, MapSet.new()}, fn line, {sensors, beacons} ->
+      [sx, sy, bx, by] =
+        Regex.scan(~r/([-\d]+)/, line, capture: :first)
+        |> List.flatten()
+        |> Enum.map(&String.to_integer/1)
+
+      {
+        Map.put(sensors, {sx, sy}, distance({sx, sy}, {bx, by})),
+        MapSet.put(beacons, {bx, by})
+      }
+    end)
+  end
+
+  def distance({ax, ay}, {bx, by}), do: abs(ax - bx) + abs(ay - by)
+
+  def find_x_on_line(sensors, line) do
+    sensors
+    |> Enum.filter(fn {{x, y}, range} -> range >= Utils.distance({x, y}, {x, line}) end)
+    |> Enum.map(fn {{x, y}, range} ->
+      offset = range - abs(y - line)
+      (x - offset)..(x + offset)
+    end)
+  end
+end
+
+defmodule Part1 do
+  def run({sensors, beacons}, line) do
+    positions_on_line =
+      sensors
+      |> Utils.find_x_on_line(line)
+      |> Enum.sort()
+
+    {_, sum} = sum(positions_on_line)
+
+    beacons_on_line =
+      beacons
+      |> Enum.filter(fn {_, by} -> by == line end)
+
+    sum - Enum.count(beacons_on_line)
+  end
+
+  def sum([first | list]) do
+    list
+    |> Enum.reduce({first, Range.size(first)}, fn low..high, {prev_low..prev_high, count} ->
+      if prev_high >= high do
+        {prev_low..prev_high, count}
+      else
+        clamped = max(low, prev_high + 1)..high
+        {clamped, count + Range.size(clamped)}
+      end
+    end)
+  end
+end
+
+defmodule Part2 do
+  def run({sensors, _beacons}, max) do
+    0..max
+    |> Enum.reduce_while({nil, nil}, fn row, _hidden_beacon ->
+      ranges =
+        Utils.find_x_on_line(sensors, row)
+        |> Enum.sort()
+
+      case find_gap(ranges) do
+        {:nogap, _} -> {:cont, {nil, nil}}
+        {:gap, column} -> {:halt, {column, row}}
+      end
+    end)
+  end
+
+  def find_gap([_first_low..first_high | rest]) do
+    Enum.reduce_while(rest, {:nogap, first_high}, fn low..high, {_found, max_high} ->
+      cond do
+        low == max_high + 2 -> {:halt, {:gap, low - 1}}
+        true -> {:cont, {:nogap, max(high, max_high)}}
+      end
+    end)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Part1.run(2_000_000)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Part2.run(4_000_000)
+|> then(fn {x, y} -> x * 4_000_000 + y end)
+```

@@ -1,0 +1,99 @@
+# Day 08
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Computer do
+  def prepare(lines) do
+    lines
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {line, index}, instructions ->
+      Map.put(instructions, index, parse(line))
+    end)
+  end
+
+  def parse(line) do
+    case String.split(line, " ") do
+      [reg, oper, val, "if", if_reg, if_oper, if_val] ->
+        %{
+          reg: reg,
+          oper: String.to_atom(oper),
+          val: String.to_integer(val),
+          if_reg: if_reg,
+          if_oper: String.to_atom(if_oper),
+          if_val: String.to_integer(if_val)
+        }
+    end
+  end
+
+  def run(registers, address, instructions) do
+    case Map.get(instructions, address) do
+      nil ->
+        registers
+
+      instruction ->
+        if if_process(registers, instruction) do
+          process(registers, instruction)
+          |> run(address + 1, instructions)
+        else
+          run(registers, address + 1, instructions)
+        end
+    end
+  end
+
+  def if_process(registers, %{if_reg: reg, if_val: val, if_oper: oper}),
+    do: Kernel.apply(Kernel, oper, [Map.get(registers, reg, 0), val])
+
+  def process(registers, %{reg: reg, val: val, oper: :inc}) do
+    new_value = Map.get(registers, reg, 0) + val
+
+    registers
+    |> Map.put(reg, new_value)
+    |> Map.update(:max, new_value, &Enum.max([&1, new_value]))
+  end
+
+  def process(registers, %{reg: reg, val: val, oper: :dec}) do
+    new_value = Map.get(registers, reg, 0) - val
+
+    registers
+    |> Map.put(reg, new_value)
+    |> Map.update(:max, new_value, &Enum.max([&1, new_value]))
+  end
+end
+
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Computer.prepare()
+```
+
+## Part 01
+
+```elixir
+Computer.run(%{}, 0, instructions)
+|> Map.filter(fn {k, _} -> k != :max end)
+|> Map.values()
+|> Enum.max()
+```
+
+## Part 02
+
+```elixir
+Computer.run(%{}, 0, instructions)
+|> Map.get(:max)
+```

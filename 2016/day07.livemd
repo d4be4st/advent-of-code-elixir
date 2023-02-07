@@ -1,0 +1,41 @@
+# Day 07
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.count(fn line ->
+  !Regex.match?(~r/\[\w*(\w)(\w)(?!\1)\2(?!\2)\1\w*\]/, line) &&
+    Regex.match?(~r/\w*(\w)(\w)(?!\1)\2(?!\2)\1\w*/, line)
+end)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.count(fn line ->
+  hyper = Regex.scan(~r/\[\w*\]/, line) |> List.flatten()
+  sub = String.split(line, hyper)
+  new_line = Enum.join(sub) <> "|" <> Enum.join(hyper)
+  Regex.match?(~r/(\w)(?!\1)(\w)\1.*\|.*\2\1\2/, new_line)
+end)
+```

@@ -1,0 +1,96 @@
+# Day 14
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(line, raindeers) do
+    [raindeer, speed, fly_seconds, rest_seconds] = String.split(line, ",")
+
+    Map.put(raindeers, raindeer, %{
+      speed: String.to_integer(speed),
+      fly_seconds: String.to_integer(fly_seconds),
+      rest_seconds: String.to_integer(rest_seconds)
+    })
+  end
+
+  def distance(raindeer, details, duration) do
+    round_seconds = details[:fly_seconds] + details[:rest_seconds]
+    rounds = div(duration, round_seconds)
+    last_round_duration = duration - rounds * round_seconds
+
+    last_round_fly =
+      if last_round_duration >= details[:fly_seconds],
+        do: details[:fly_seconds],
+        else: last_round_duration
+
+    {rounds * details[:fly_seconds] * details[:speed] + last_round_fly * details[:speed],
+     raindeer}
+  end
+
+  def all_max(distances) do
+    distances
+    |> Enum.sort()
+    |> Enum.reverse()
+    |> Enum.chunk_by(fn {x, _} -> x end)
+    |> List.first()
+  end
+end
+```
+
+## Part 01
+
+```elixir
+duration = 2503
+
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(%{}, fn line, acc ->
+  Utils.parse(line, acc)
+end)
+|> Enum.map(fn {raindeer, details} ->
+  Utils.distance(raindeer, details, duration)
+end)
+|> Enum.max()
+```
+
+## Part 02
+
+```elixir
+raindeers =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce(%{}, fn line, acc ->
+    Utils.parse(line, acc)
+  end)
+
+score = for raindeer <- Map.keys(raindeers), into: %{}, do: {raindeer, 0}
+
+1..2503
+|> Enum.reduce(score, fn second, score ->
+  raindeers
+  |> Enum.map(fn {raindeer, details} ->
+    Utils.distance(raindeer, details, second)
+  end)
+  |> Utils.all_max()
+  |> Enum.reduce(score, fn {_, leading}, score ->
+    Map.update(score, leading, 1, &(&1 + 1))
+  end)
+end)
+```

@@ -1,0 +1,251 @@
+# Day 10
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(monkeys) do
+    monkeys
+    |> Enum.reduce(%{}, fn monkey, map ->
+      [
+        line_index,
+        line_starting_items,
+        line_operation,
+        line_test,
+        line_test_true,
+        line_test_false
+      ] = String.split(monkey, "\n")
+
+      index = String.at(line_index, -2) |> String.to_integer()
+
+      starting_items =
+        String.split(line_starting_items, ": ")
+        |> Enum.at(-1)
+        |> String.split(", ")
+        |> Enum.map(&String.to_integer/1)
+
+      operation =
+        String.split(line_operation, " = ")
+        |> Enum.at(-1)
+
+      test_divisible_by =
+        String.split(line_test, " ")
+        |> Enum.at(-1)
+        |> String.to_integer()
+
+      true_throw =
+        String.split(line_test_true, " ")
+        |> Enum.at(-1)
+        |> String.to_integer()
+
+      false_throw =
+        String.split(line_test_false, " ")
+        |> Enum.at(-1)
+        |> String.to_integer()
+
+      Map.put(map, index, %{
+        items: :queue.from_list(starting_items),
+        operation: operation,
+        test_divisible_by: test_divisible_by,
+        true_throw: true_throw,
+        false_throw: false_throw,
+        inspect_count: 0
+      })
+    end)
+  end
+end
+
+defmodule MonkeysPart1 do
+  def run(monkeys, times) do
+    run(monkeys, Map.keys(monkeys) |> Enum.sort(), times)
+  end
+
+  def run(monkeys, _, 0), do: monkeys
+
+  def run(monkeys, monkey_indexes, times) do
+    if rem(times, 1000) == 0, do: IO.inspect(times)
+
+    monkeys
+    |> process_round(monkey_indexes)
+    |> run(times - 1)
+  end
+
+  def process_round(monkeys, []), do: monkeys
+
+  def process_round(monkeys, [current_monkey | rest]) do
+    monkeys
+    |> process_monkey(current_monkey)
+    |> process_round(rest)
+  end
+
+  def process_monkey(monkeys, current_monkey) do
+    case :queue.out(monkeys[current_monkey][:items]) do
+      {{:value, item}, items} ->
+        {new_item, throw_to_monkey} = throw_to_monkey(item, monkeys[current_monkey])
+
+        monkeys
+        |> Map.update!(current_monkey, fn monkey -> Map.put(monkey, :items, items) end)
+        |> Map.update!(throw_to_monkey, fn monkey ->
+          Map.update!(monkey, :items, &:queue.in(new_item, &1))
+        end)
+        |> Map.update!(current_monkey, fn monkey ->
+          Map.update!(monkey, :inspect_count, &(&1 + 1))
+        end)
+        |> process_monkey(current_monkey)
+
+      {:empty, _} ->
+        monkeys
+    end
+  end
+
+  def throw_to_monkey(item, %{
+        operation: operation,
+        test_divisible_by: test_divisible_by,
+        true_throw: true_throw,
+        false_throw: false_throw
+      }) do
+    new_item =
+      case String.split(operation, " ") do
+        ["old", "+", "old"] -> item + item
+        ["old", "*", "old"] -> item * item
+        ["old", "+", value] -> item + String.to_integer(value)
+        ["old", "*", value] -> item * String.to_integer(value)
+      end
+      |> Kernel.div(3)
+
+    if rem(new_item, test_divisible_by) == 0 do
+      {new_item, true_throw}
+    else
+      {new_item, false_throw}
+    end
+  end
+end
+
+# input
+# |> Kino.Input.read()
+# |> String.split("\n\n")
+# |> Utils.parse()
+# |> Monkeys.run(20)
+# |> Enum.map(fn {_, monkey} -> monkey[:inspect_count] end)
+# |> Enum.sort()
+# |> Enum.reverse
+# |> Enum.take(2)
+# |> Enum.reduce(&*/2)
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n\n")
+|> Utils.parse()
+|> MonkeysPart1.run(20)
+|> Enum.map(fn {_, monkey} -> monkey[:inspect_count] end)
+|> Enum.sort()
+|> Enum.reverse()
+|> Enum.take(2)
+|> Enum.reduce(&*/2)
+```
+
+## Part 02
+
+```elixir
+defmodule MonkeysPart2 do
+  def run(monkeys, times) do
+    divide_by =
+      Enum.map(monkeys, fn {_, monkey} -> monkey[:test_divisible_by] end) |> Enum.reduce(&*/2)
+
+    run(monkeys, Map.keys(monkeys) |> Enum.sort(), divide_by, times)
+  end
+
+  def run(monkeys, _, _, 0), do: monkeys
+
+  def run(monkeys, monkey_indexes, divide_by, times) do
+    monkeys
+    |> process_round(monkey_indexes, divide_by)
+    |> run(monkey_indexes, divide_by, times - 1)
+  end
+
+  def process_round(monkeys, [], _), do: monkeys
+
+  def process_round(monkeys, [current_monkey | rest], divide_by) do
+    monkeys
+    |> process_monkey(current_monkey, divide_by)
+    |> process_round(rest, divide_by)
+  end
+
+  def process_monkey(monkeys, current_monkey, divide_by) do
+    case :queue.out(monkeys[current_monkey][:items]) do
+      {{:value, item}, items} ->
+        {new_item, throw_to_monkey} = throw_to_monkey(item, monkeys[current_monkey], divide_by)
+
+        monkeys
+        |> Map.update!(current_monkey, fn monkey -> Map.put(monkey, :items, items) end)
+        |> Map.update!(throw_to_monkey, fn monkey ->
+          Map.update!(monkey, :items, &:queue.in(new_item, &1))
+        end)
+        |> Map.update!(current_monkey, fn monkey ->
+          Map.update!(monkey, :inspect_count, &(&1 + 1))
+        end)
+        |> process_monkey(current_monkey, divide_by)
+
+      {:empty, _} ->
+        monkeys
+    end
+  end
+
+  def throw_to_monkey(
+        item,
+        %{
+          operation: operation,
+          test_divisible_by: test_divisible_by,
+          true_throw: true_throw,
+          false_throw: false_throw
+        },
+        divide_by
+      ) do
+    new_item =
+      case String.split(operation, " ") do
+        ["old", "+", "old"] -> item + item
+        ["old", "*", "old"] -> item * item
+        ["old", "+", value] -> item + String.to_integer(value)
+        ["old", "*", value] -> item * String.to_integer(value)
+      end
+      |> Kernel.rem(divide_by)
+
+    if rem(new_item, test_divisible_by) == 0 do
+      {new_item, true_throw}
+    else
+      {new_item, false_throw}
+    end
+  end
+end
+```
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n\n")
+|> Utils.parse()
+|> MonkeysPart2.run(10000)
+|> Enum.map(fn {_, monkey} -> monkey[:inspect_count] end)
+|> Enum.sort()
+|> Enum.reverse()
+|> Enum.take(2)
+|> Enum.reduce(&*/2)
+```

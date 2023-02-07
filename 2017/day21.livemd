@@ -1,0 +1,103 @@
+# Day 21
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(lines) do
+    lines
+    |> Enum.reduce([], fn line, acc ->
+      line
+      |> String.graphemes()
+      |> Enum.reduce(acc, fn ch, acc ->
+        if ch == ".", do: [false | acc], else: [true | acc]
+      end)
+    end)
+    |> Enum.reverse()
+  end
+
+  def group([], _, _, _, acc), do: acc
+
+  def group(list, row, 0, 0, size, acc),
+    do: group(list, row + 1, size, size, acc)
+
+  def group(list, row, 0, times, size, acc),
+    do: group(list, row, size, times - 1, size, acc)
+
+  def group([group | list], row, column_times, times, size, acc) do
+    acc = Map.update(acc, row * size + (size - column_times), [group], &[group | &1])
+
+    group(list, row, column_times - 1, times, size, acc)
+  end
+
+  def chunk(str, n) do
+    String.split(str, "/")
+    |> Enum.chunk_every(n)
+    |> Enum.flat_map(fn x ->
+      Enum.map(x, fn str ->
+        for <<x::binary-size(n) <- str>>, do: x
+      end)
+      |> transpose()
+      |> Enum.map(&Enum.join(&1, "/"))
+    end)
+  end
+
+  def transpose(matrix) do
+    List.zip(matrix)
+    |> Enum.map(&Tuple.to_list/1)
+  end
+end
+
+# "...#
+# .#..
+# ..#.
+# #..#"
+# |> String.split("\n")
+# |> Utils.parse()
+# |> Enum.chunk_every(2)
+# |> Utils.group(0, 2, 2, 2, %{})
+
+m = ["123456", "123456", "123456", "123456", "123456", "123456"] |> Enum.join("/")
+
+n = 2
+
+"####/..../#.#./.#.#"
+|> String.split("/")
+|> Enum.chunk_every(n)
+|> Enum.flat_map(fn x ->
+  Enum.map(x, fn str ->
+    for <<x::binary-size(n) <- str>>, do: x
+  end)
+  |> List.zip()
+  |> Enum.map(&Tuple.to_list/1)
+  |> Enum.map(&Enum.join(&1, "/"))
+end)
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

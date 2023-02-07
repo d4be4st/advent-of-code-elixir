@@ -1,0 +1,103 @@
+# Day 01
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse_input(input) do
+    String.split(input, ", ")
+  end
+
+  def traverse({x, y, :north}, "L" <> steps) do
+    steps = String.to_integer(steps)
+    {x - steps, y, :west}
+  end
+
+  def traverse({x, y, :north}, "R" <> steps) do
+    steps = String.to_integer(steps)
+    {x + steps, y, :east}
+  end
+
+  def traverse({x, y, :south}, "L" <> steps) do
+    steps = String.to_integer(steps)
+    {x + steps, y, :east}
+  end
+
+  def traverse({x, y, :south}, "R" <> steps) do
+    steps = String.to_integer(steps)
+    {x - steps, y, :west}
+  end
+
+  def traverse({x, y, :west}, "L" <> steps) do
+    steps = String.to_integer(steps)
+    {x, y + steps, :south}
+  end
+
+  def traverse({x, y, :west}, "R" <> steps) do
+    steps = String.to_integer(steps)
+    {x, y - steps, :north}
+  end
+
+  def traverse({x, y, :east}, "L" <> steps) do
+    steps = String.to_integer(steps)
+    {x, y - steps, :north}
+  end
+
+  def traverse({x, y, :east}, "R" <> steps) do
+    steps = String.to_integer(steps)
+    {x, y + steps, :south}
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse_input()
+|> Enum.reduce({0, 0, :north}, fn instruction, coord ->
+  Utils.traverse(coord, instruction)
+end)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse_input()
+|> Enum.reduce_while({{0, 0, :north}, MapSet.new()}, fn instruction,
+                                                        {{x, y, _direction} = coord, visited} ->
+  {new_x, new_y, new_direction} = Utils.traverse(coord, instruction)
+
+  new_coords =
+    for i <- x..new_x,
+        j <- y..new_y do
+      {i, j}
+    end
+    |> Kernel.--([{x, y}])
+
+  first_intersection = Enum.find(new_coords, &MapSet.member?(visited, &1))
+
+  if first_intersection do
+    {:halt, first_intersection}
+  else
+    {:cont, {{new_x, new_y, new_direction}, MapSet.union(MapSet.new(new_coords), visited)}}
+  end
+end)
+```

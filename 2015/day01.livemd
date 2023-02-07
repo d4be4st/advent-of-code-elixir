@@ -1,0 +1,55 @@
+# Day 01
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.text("input")
+```
+
+## Shared
+
+```elixir
+movement = fn char ->
+  case char do
+    "(" -> 1
+    ")" -> -1
+  end
+end
+```
+
+## Part 1
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.graphemes()
+|> Enum.map(fn char ->
+  movement.(char)
+end)
+|> Enum.sum()
+```
+
+## Part 2
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.graphemes()
+|> Enum.reduce_while({0, 0}, fn char, {acc, index} ->
+  acc = acc + movement.(char)
+
+  if acc >= 0 do
+    {:cont, {acc, index + 1}}
+  else
+    {:halt, index + 1}
+  end
+end)
+```

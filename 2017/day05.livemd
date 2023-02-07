@@ -1,0 +1,74 @@
+# Day 05
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(input) do
+    input
+    |> String.split("\n")
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {line, index}, acc ->
+      Map.put(acc, index, String.to_integer(line))
+    end)
+  end
+
+  def run(instructions, address, steps) do
+    case Map.get(instructions, address) do
+      nil ->
+        steps
+
+      offset ->
+        Map.update!(instructions, address, &(&1 + 1))
+        |> run(address + offset, steps + 1)
+    end
+  end
+
+  def run2(instructions, address, steps) do
+    case Map.get(instructions, address) do
+      nil ->
+        steps
+
+      offset when offset >= 3 ->
+        Map.update!(instructions, address, &(&1 - 1))
+        |> run2(address + offset, steps + 1)
+
+      offset ->
+        Map.update!(instructions, address, &(&1 + 1))
+        |> run2(address + offset, steps + 1)
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Utils.run(0, 0)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Utils.run2(0, 0)
+```

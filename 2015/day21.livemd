@@ -1,0 +1,110 @@
+# Day 21
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+# Weapons:    Cost  Damage  Armor
+# Dagger        8     4       0
+# Shortsword   10     5       0
+# Warhammer    25     6       0
+# Longsword    40     7       0
+# Greataxe     74     8       0
+
+# Armor:      Cost  Damage  Armor
+# Leather      13     0       1
+# Chainmail    31     0       2
+# Splintmail   53     0       3
+# Bandedmail   75     0       4
+# Platemail   102     0       5
+
+# Rings:      Cost  Damage  Armor
+# Damage +1    25     1       0
+# Damage +2    50     2       0
+# Damage +3   100     3       0
+# Defense +1   20     0       1
+# Defense +2   40     0       2
+# Defense +3   80     0       3
+
+weapons = [
+  [8, 4, 0],
+  [10, 5, 0],
+  [25, 6, 0],
+  [40, 7, 0],
+  [74, 8, 0]
+]
+
+armors = [
+  [13, 0, 1],
+  [31, 0, 2],
+  [53, 0, 3],
+  [75, 0, 4],
+  [102, 0, 5]
+]
+
+rings = [
+  [25, 1, 0],
+  [50, 2, 0],
+  [100, 3, 0],
+  [20, 0, 1],
+  [40, 0, 2],
+  [80, 0, 3]
+]
+
+boss_weapon = 8
+boss_armor = 2
+boss_hp = 109
+hp = 100
+```
+
+```elixir
+positive = fn number ->
+  if number < 1, do: 1, else: number
+end
+```
+
+```elixir
+combinations =
+  for w <- [1, 2, 3, 4, 5],
+      a <- [0, 1, 2, 3, 4, 5],
+      r1 <- [0, 1, 2, 3, 4, 5, 6],
+      r2 <- [0, 1, 2, 3, 4, 5, 6],
+      r1 != r2 || r1 == 0 do
+    {w, a, r1, r2}
+  end
+  |> Enum.map(fn {w, a, r1, r2} ->
+    weapon = Enum.at(weapons, w - 1)
+    armor = if a == 0, do: [0, 0, 0], else: Enum.at(armors, a - 1)
+    ring1 = if r1 == 0, do: [0, 0, 0], else: Enum.at(rings, r1 - 1)
+    ring2 = if r2 == 0, do: [0, 0, 0], else: Enum.at(rings, r2 - 1)
+
+    Enum.zip([weapon, armor, ring1, ring2])
+    |> Enum.map(fn comb -> comb |> Tuple.to_list() |> Enum.sum() end)
+  end)
+  |> Enum.sort()
+
+nil
+```
+
+## Part 01
+
+```elixir
+Enum.find(combinations, fn [_gold, weapon, armor] ->
+  rounds = ceil(boss_hp / positive.(weapon - boss_armor))
+  boss_damage = (rounds - 1) * positive.(boss_weapon - armor)
+  boss_damage < 100
+end)
+```
+
+## Part 02
+
+```elixir
+combinations
+|> Enum.reverse()
+|> Enum.find(fn [_gold, weapon, armor] ->
+  rounds = ceil(hp / positive.(boss_weapon - armor))
+  damage = (rounds + 1) * positive.(weapon - boss_armor)
+  damage < 109
+end)
+```

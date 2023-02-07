@@ -1,0 +1,36 @@
+# Day X
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

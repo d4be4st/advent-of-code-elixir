@@ -1,0 +1,48 @@
+# Day 06
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def find(list, index, size) do
+    if list |> Enum.take(size) |> Enum.uniq() |> Enum.count() == size do
+      index + size
+    else
+      [_ | rest] = list
+      find(rest, index + 1, size)
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.graphemes()
+|> Utils.find(0, 4)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.graphemes()
+|> Utils.find(0, 14)
+```

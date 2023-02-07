@@ -1,0 +1,100 @@
+# Day 08
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Util do
+  def traverse([], count), do: count
+
+  def traverse(graphemes, count) do
+    [head | rest] = graphemes
+
+    case head do
+      "\\" ->
+        [x | tail] = rest
+
+        case x do
+          "\"" ->
+            traverse(tail, count + 1)
+
+          "\\" ->
+            traverse(tail, count + 1)
+
+          "x" ->
+            if Enum.count(tail) >= 2 do
+              [d1, d2 | x_tail] = tail
+
+              case Enum.join([d1, d2]) |> Integer.parse(16) do
+                :error -> traverse(rest, count + 1)
+                _ -> traverse(x_tail, count + 1)
+              end
+            else
+              traverse(rest, count + 1)
+            end
+        end
+
+      _ ->
+        traverse(rest, count + 1)
+    end
+  end
+end
+```
+
+## Part 01
+
+```elixir
+{code, memory} =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce({0, 0}, fn line, {sum_code, sum_memory} ->
+    code = line |> String.graphemes() |> Enum.count()
+
+    memory =
+      line
+      |> String.graphemes()
+      |> Enum.slice(1..-2)
+      |> Util.traverse(0)
+
+    {code + sum_code, memory + sum_memory}
+  end)
+
+code - memory
+```
+
+## Part 02
+
+```elixir
+{old_count, new_count} =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.reduce({0, 0}, fn line, {sum_old, sum_new} ->
+    old_count = line |> String.graphemes() |> Enum.count()
+
+    new_count =
+      line
+      |> String.graphemes()
+      |> Enum.count(fn ch ->
+        Enum.member?(["\\", "\""], ch)
+      end)
+
+    {sum_old + old_count, sum_new + new_count + 2 + old_count}
+  end)
+
+new_count - old_count
+```

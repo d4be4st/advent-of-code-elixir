@@ -1,0 +1,121 @@
+# Day 23
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Computer do
+  def run(registers, instructions) do
+    process(registers, 0, 0, instructions)
+  end
+
+  def process(registers, address, mul_count, instructions) do
+    case Enum.at(instructions, address) do
+      nil ->
+        {registers, mul_count}
+
+      instruction ->
+        IO.inspect(instruction)
+
+        case String.split(instruction) do
+          ["set", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            registers
+            |> Map.put(reg1, value)
+            |> process(address + 1, mul_count, instructions)
+
+          ["sub", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            registers
+            |> Map.update(reg1, value, fn v -> v - value end)
+            |> process(address + 1, mul_count, instructions)
+
+          ["mul", reg1, reg2] ->
+            value = value(registers, reg2)
+
+            registers
+            |> Map.update(reg1, 0, fn v -> v * value end)
+            |> process(address + 1, mul_count + 1, instructions)
+
+          ["jnz", reg1, reg2] ->
+            value = if value(registers, reg1) != 0, do: value(registers, reg2), else: 1
+
+            process(registers, address + value, mul_count, instructions)
+        end
+    end
+  end
+
+  def value(registers, reg) when reg >= "a" and reg <= "z" do
+    Map.get(registers, reg, 0)
+  end
+
+  def value(_registers, reg) do
+    String.to_integer(reg)
+  end
+end
+
+# instructions =
+# "set a 1
+# add a 2
+# mul a a
+# mod a 5
+# snd a
+# set a 0
+# rcv a
+# jgz a -1
+# set a 1
+# jgz a -2"
+# |> String.split("\n")
+# |> Computer.run()
+
+instructions =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+```
+
+## Part 01
+
+```elixir
+Computer.run(%{}, instructions)
+```
+
+## Part 02
+
+```elixir
+defmodule Part2 do
+  def run(b) do
+    b = b * 100 + 100_000
+    c = b + 17000
+    n = div(c - b, 17) + 1
+
+    Enum.reduce(1..n, {b, 0}, fn _n, {b, acc} ->
+      acc = if prime_n?(b), do: acc, else: acc + 1
+      {b + 17, acc}
+    end)
+  end
+
+  defp prime_n?(x) do
+    Enum.reduce_while(2..div(x, 2), true, fn d, acc ->
+      if rem(x, d) == 0, do: {:halt, false}, else: {:cont, acc}
+    end)
+  end
+end
+
+Part2.run(84)
+```

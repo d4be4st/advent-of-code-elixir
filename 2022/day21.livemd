@@ -1,0 +1,123 @@
+# Day 21
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Tree do
+  def build(input) do
+    input
+    |> String.split("\n")
+    |> Enum.reduce(%{}, fn line, tree ->
+      [name, operation] = String.split(line, ": ")
+      add_node(name, String.split(operation, " "), tree)
+    end)
+  end
+
+  def add_node(name, [op1, op, op2], tree) do
+    Map.put(tree, name, %{operation: op, op1: op1, op2: op2})
+  end
+
+  def add_node(name, [value], tree) do
+    Map.put(tree, name, %{operation: :value, op1: String.to_integer(value)})
+  end
+
+  def run(tree) do
+    process(tree, "root")
+  end
+
+  def run2(tree, start) do
+    %{op1: op1, op2: op2} = Map.get(tree, "root")
+    cmp_value = process(tree, op2) |> IO.inspect()
+
+    run2(tree, start, op1, cmp_value)
+  end
+
+  def run2(tree, number, op1, cmp_value) do
+    res =
+      tree
+      |> Map.update!("humn", fn v -> Map.put(v, :op1, number) end)
+      |> process(op1)
+      |> IO.inspect()
+
+    if res == cmp_value do
+      number
+    else
+      run2(tree, number + 1, op1, cmp_value)
+    end
+  end
+
+  def process(tree, node) do
+    case Map.get(tree, node) do
+      %{operation: :value, op1: op1} ->
+        op1
+
+      %{operation: "+", op1: op1, op2: op2} ->
+        process(tree, op1) + process(tree, op2)
+
+      %{operation: "-", op1: op1, op2: op2} ->
+        process(tree, op1) - process(tree, op2)
+
+      %{operation: "*", op1: op1, op2: op2} ->
+        process(tree, op1) * process(tree, op2)
+
+      %{operation: "/", op1: op1, op2: op2} ->
+        div(process(tree, op1), process(tree, op2))
+
+      %{operation: "=", op1: op1, op2: op2} ->
+        process(tree, op1) |> IO.inspect() == process(tree, op2) |> IO.inspect()
+    end
+  end
+end
+
+# "root: pppw + sjmn
+# dbpl: 5
+# cczh: sllz + lgvd
+# zczc: 2
+# ptdq: humn - dvpt
+# dvpt: 3
+# lfqf: 4
+# humn: 5
+# ljgn: 2
+# sjmn: drzm * dbpl
+# sllz: 4
+# pppw: cczh / lfqf
+# lgvd: ljgn * ptdq
+# drzm: hmdt - zczc
+# hmdt: 32"
+# |> Tree.build
+# |> Tree.run2(0)
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> Tree.build()
+|> Tree.run()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> Tree.build()
+|> Tree.run2(3_378_273_370_200)
+
+# 109255486022220
+```

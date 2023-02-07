@@ -1,0 +1,147 @@
+# Day 14
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(input) do
+    input
+    |> String.split("\n")
+    |> Enum.reduce(%{}, fn line, map ->
+      line
+      |> String.split(" -> ")
+      |> parse_line(map)
+    end)
+  end
+
+  def parse_line([_last], map), do: map
+
+  def parse_line([first, second | rest], map) do
+    [firstx, firsty] = first |> String.split(",") |> Enum.map(&String.to_integer/1)
+    [secondx, secondy] = second |> String.split(",") |> Enum.map(&String.to_integer/1)
+
+    map =
+      for x <- firstx..secondx,
+          y <- firsty..secondy,
+          reduce: map do
+        map -> Map.put(map, {x, y}, :wall)
+      end
+
+    parse_line([second | rest], map)
+  end
+end
+
+defmodule Part1 do
+  def run(map) do
+    {_maxx, maxy} = map |> Map.keys() |> Enum.max_by(&elem(&1, 1))
+
+    start_drop(map, {500, 0}, maxy)
+  end
+
+  def start_drop(map, source, maxy) do
+    case next_position(map, source, maxy) do
+      {:halt, map} -> map
+      {:cont, map} -> start_drop(map, source, maxy)
+    end
+  end
+
+  def next_position(map, {_x, y}, maxy) when y + 1 > maxy, do: {:halt, map}
+
+  def next_position(map, {x, y}, maxy) do
+    cond do
+      Map.get(map, {x, y + 1}) == nil ->
+        next_position(map, {x, y + 1}, maxy)
+
+      Map.get(map, {x - 1, y + 1}) == nil ->
+        next_position(map, {x - 1, y + 1}, maxy)
+
+      Map.get(map, {x + 1, y + 1}) == nil ->
+        next_position(map, {x + 1, y + 1}, maxy)
+
+      true ->
+        {:cont, Map.put(map, {x, y}, :sand)}
+    end
+  end
+end
+
+defmodule Part2 do
+  def run(map) do
+    {_maxx, maxy} = map |> Map.keys() |> Enum.max_by(&elem(&1, 1))
+
+    start_drop(map, {500, 0}, maxy + 2)
+  end
+
+  def start_drop(map, source, floor) do
+    case next_position(map, source, floor) do
+      {:halt, map} -> map
+      {:cont, map} -> start_drop(map, source, floor)
+    end
+  end
+
+  def next_position(map, {x, y}, floor) do
+    cond do
+      map_get(map, {x, y + 1}, floor) == nil ->
+        next_position(map, {x, y + 1}, floor)
+
+      map_get(map, {x - 1, y + 1}, floor) == nil ->
+        next_position(map, {x - 1, y + 1}, floor)
+
+      map_get(map, {x + 1, y + 1}, floor) == nil ->
+        next_position(map, {x + 1, y + 1}, floor)
+
+      true ->
+        if {x, y} == {500, 0} do
+          {:halt, Map.put(map, {x, y}, :sand)}
+        else
+          {:cont, Map.put(map, {x, y}, :sand)}
+        end
+    end
+  end
+
+  def map_get(_map, {_x, y}, floor) when y == floor, do: :wall
+  def map_get(map, {x, y}, _floor), do: Map.get(map, {x, y})
+end
+
+"498,4 -> 498,6 -> 496,6
+503,4 -> 502,4 -> 502,9 -> 494,9"
+|> Utils.parse()
+|> Part2.run()
+|> Map.values()
+|> Enum.count(&(&1 == :sand))
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Part1.run()
+|> Map.values()
+|> Enum.count(&(&1 == :sand))
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> Utils.parse()
+|> Part2.run()
+|> Map.values()
+|> Enum.count(&(&1 == :sand))
+```

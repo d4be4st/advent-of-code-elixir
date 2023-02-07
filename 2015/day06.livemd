@@ -1,0 +1,106 @@
+# Day 06
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+parse = fn start, finish ->
+  [x1, y1] = start |> String.split(",") |> Enum.map(&String.to_integer/1)
+  [x2, y2] = finish |> String.split(",") |> Enum.map(&String.to_integer/1)
+  {x1, y1, x2, y2}
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(%{}, fn line, acc ->
+  case String.split(line, " ") do
+    ["turn", "on", start, "through", finish] ->
+      {x1, y1, x2, y2} = parse.(start, finish)
+
+      for x <- x1..x2,
+          y <- y1..y2,
+          reduce: acc do
+        acc -> Map.put(acc, {x, y}, true)
+      end
+
+    ["turn", "off", start, "through", finish] ->
+      {x1, y1, x2, y2} = parse.(start, finish)
+
+      for x <- x1..x2,
+          y <- y1..y2,
+          reduce: acc do
+        acc -> Map.put(acc, {x, y}, false)
+      end
+
+    ["toggle", start, "through", finish] ->
+      {x1, y1, x2, y2} = parse.(start, finish)
+
+      for x <- x1..x2,
+          y <- y1..y2,
+          reduce: acc do
+        acc -> Map.update(acc, {x, y}, true, &(!&1))
+      end
+  end
+end)
+|> Enum.count(fn {_key, value} -> value == true end)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(%{}, fn line, acc ->
+  case String.split(line, " ") do
+    ["turn", "on", start, "through", finish] ->
+      {x1, y1, x2, y2} = parse.(start, finish)
+
+      for x <- x1..x2,
+          y <- y1..y2,
+          reduce: acc do
+        acc -> Map.update(acc, {x, y}, 1, &(&1 + 1))
+      end
+
+    ["turn", "off", start, "through", finish] ->
+      {x1, y1, x2, y2} = parse.(start, finish)
+
+      for x <- x1..x2,
+          y <- y1..y2,
+          reduce: acc do
+        acc ->
+          Map.update(acc, {x, y}, 0, fn i ->
+            if i > 1, do: i - 1, else: 0
+          end)
+      end
+
+    ["toggle", start, "through", finish] ->
+      {x1, y1, x2, y2} = parse.(start, finish)
+
+      for x <- x1..x2,
+          y <- y1..y2,
+          reduce: acc do
+        acc -> Map.update(acc, {x, y}, 2, &(&1 + 2))
+      end
+  end
+end)
+|> Enum.reduce(0, fn {_key, value}, sum -> sum + value end)
+```

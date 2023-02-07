@@ -1,0 +1,106 @@
+# Day 16
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(input) do
+    input
+    |> String.split("\n")
+    |> Enum.reduce(%{}, fn line, acc ->
+      [[_, valve, rate, children]] =
+        Regex.scan(~r/Valve (\w\w) has flow rate=(\d+); tunnels? leads? to valves? (.*)/, line)
+
+      Map.put(acc, valve, {String.to_integer(rate), String.split(children, ", ")})
+    end)
+  end
+
+  def run(map) do
+    # process(["AA"], 30, 0, map, MapSet.new)
+    process(:queue.from_list([{"AA", 30, 0}]), map, MapSet.new())
+  end
+
+  # def process(_, 0, pressure, _, _), do: pressure
+  # def process([], _, pressure, _, _), do: pressure
+  # def process([valve | list], time, pressure, map, traversed) do
+
+  #   {rate, children} = Map.get(map, valve, {0, []})
+
+  #   IO.inspect({valve, rate, time, pressure})
+
+  #   cond do
+  #     MapSet.member?(traversed, valve) ->
+  #       process(list, time - 1, pressure, map, traversed)
+
+  #     rate == 0 ->
+  #       traversed = MapSet.put(traversed, valve)
+  #       process(children, time - 1, pressure, map, traversed)
+
+  #     rate > 0 ->
+  #       traversed = MapSet.put(traversed, valve)
+  #       process(children, time - 2, pressure + rate * (time - 1), map, traversed)
+  #   end
+  def process(queue, map, opened) do
+    {{:value, {valve, time, pressure}}, queue} = :queue.out(queue)
+    IO.inspect({valve, time, pressure})
+
+    if time == 0 do
+      pressure
+    else
+      {rate, children} = Map.get(map, valve, {0, []})
+
+      {time, pressure, opened} =
+        if rate == 0 do
+          {time - 1, pressure, opened}
+        else
+          {time - 2, pressure + rate * (time - 1), MapSet.put(opened, valve)}
+        end
+
+      children
+      |> Enum.reduce(queue, &:queue.in({&1, time, pressure}, &2))
+      |> process(map, opened)
+    end
+  end
+end
+
+"Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
+Valve BB has flow rate=13; tunnels lead to valves CC, AA
+Valve CC has flow rate=2; tunnels lead to valves DD, BB
+Valve DD has flow rate=20; tunnels lead to valves CC, AA, EE
+Valve EE has flow rate=3; tunnels lead to valves FF, DD
+Valve FF has flow rate=0; tunnels lead to valves EE, GG
+Valve GG has flow rate=0; tunnels lead to valves FF, HH
+Valve HH has flow rate=22; tunnel leads to valve GG
+Valve II has flow rate=0; tunnels lead to valves AA, JJ
+Valve JJ has flow rate=21; tunnel leads to valve II"
+|> Utils.parse()
+|> Utils.run()
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

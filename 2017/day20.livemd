@@ -1,0 +1,91 @@
+# Day 20
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def parse(lines) do
+    lines
+    |> Enum.with_index()
+    |> Enum.reduce([], fn {line, index}, acc ->
+      [px, py, pz, vx, vy, vz, ax, ay, az] =
+        Regex.run(~r/p=<(.+),(.+),(.+)>, v=<(.*),(.*),(.*)>, a=<(.*),(.*),(.*)>/, line)
+        |> Enum.slice(1..-1)
+        |> Enum.map(&String.to_integer/1)
+
+      [{index, {{px, py, pz}, {vx, vy, vz}, {ax, ay, az}}} | acc]
+      |> Enum.sort()
+    end)
+  end
+
+  def simulate_particle({{px, py, pz}, {vx, vy, vz}, {ax, ay, az}}, time) do
+    {
+      position(px, vx, ax, time),
+      position(py, vy, ay, time),
+      position(pz, vz, az, time)
+    }
+  end
+
+  def simulate_with_collisions(particles, time, end_time) when time == end_time, do: particles
+
+  def simulate_with_collisions(particles, time, end_time) do
+    remaining_particle_indexes =
+      particles
+      |> Enum.map(fn {index, particle} -> {index, Utils.simulate_particle(particle, time)} end)
+      |> IO.inspect()
+      |> Enum.group_by(fn {_index, position} -> position end)
+      |> Enum.filter(fn {_group, array} -> Enum.count(array) == 1 end)
+      |> Enum.map(fn {_group, array} -> List.first(array) |> elem(0) end)
+
+    particles
+    |> Enum.filter(fn {index, _particle} -> Enum.member?(remaining_particle_indexes, index) end)
+    |> simulate_with_collisions(time + 1, end_time)
+  end
+
+  def position(p, v, a, t) do
+    p + v * t + div(t * (t + 1), 2) * a
+  end
+end
+
+particles =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Utils.parse()
+  |> Utils.simulate_with_collisions(1, 200)
+  |> Enum.count()
+```
+
+## Part 01
+
+```elixir
+[1000, 100_000, 1_000_000]
+|> Enum.map(fn time ->
+  particles
+  |> Enum.map(fn {index, particle} -> {index, Utils.simulate_particle(particle, time)} end)
+  |> Enum.map(fn {index, {x, y, z}} -> {abs(x) + abs(y) + abs(z), index} end)
+  |> Enum.sort()
+  |> Enum.take(3)
+end)
+```
+
+## Part 02
+
+```elixir
+Utils.simulate_with_collisions(particles, 0, 20000)
+|> Enum.count()
+```

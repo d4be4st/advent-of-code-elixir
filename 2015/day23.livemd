@@ -1,0 +1,100 @@
+# Day 23 - Computer
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule Computer do
+  def run_instruction(instructions, registers, current_address) do
+    # Process.sleep(500)
+
+    case Enum.at(instructions, current_address) do
+      "inc " <> register ->
+        run_instruction(
+          instructions,
+          Map.update(registers, register, 1, &(&1 + 1)),
+          current_address + 1
+        )
+
+      "hlf " <> register ->
+        run_instruction(
+          instructions,
+          Map.update(registers, register, 0, &div(&1, 2)),
+          current_address + 1
+        )
+
+      "tpl " <> register ->
+        run_instruction(
+          instructions,
+          Map.update(registers, register, 0, &(&1 * 3)),
+          current_address + 1
+        )
+
+      "jmp " <> offset ->
+        run_instruction(
+          instructions,
+          registers,
+          current_address + String.to_integer(offset)
+        )
+
+      "jio " <> <<register>> <> ", " <> offset ->
+        next_address =
+          if Map.get(registers, to_string([register]), 0) == 1,
+            do: current_address + String.to_integer(offset),
+            else: current_address + 1
+
+        run_instruction(
+          instructions,
+          registers,
+          next_address
+        )
+
+      "jie " <> <<register>> <> ", " <> offset ->
+        next_address =
+          if rem(Map.get(registers, to_string([register]), 0), 2) == 0,
+            do: current_address + String.to_integer(offset),
+            else: current_address + 1
+
+        run_instruction(
+          instructions,
+          registers,
+          next_address
+        )
+
+      _ ->
+        registers
+    end
+  end
+end
+```
+
+```elixir
+String.to_charlist("a") |> Enum.map(&(&1 - ?a))
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Computer.run_instruction(%{}, 0)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Computer.run_instruction(%{"a" => 1}, 0)
+```

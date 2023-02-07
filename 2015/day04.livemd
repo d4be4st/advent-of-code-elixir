@@ -1,0 +1,55 @@
+# Day 04
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Part 01
+
+```elixir
+secret =
+  input
+  |> Kino.Input.read()
+
+Stream.unfold(1, fn index ->
+  <<leading::24, _::binary>> = :crypto.hash(:md5, secret <> Integer.to_string(index))
+
+  if leading < 16 do
+    IO.inspect(index)
+    nil
+  else
+    {index, index + 1}
+  end
+end)
+|> Stream.run()
+```
+
+## Part 02
+
+```elixir
+secret =
+  input
+  |> Kino.Input.read()
+
+Stream.unfold(1, fn index ->
+  <<leading::24, _::binary>> = :crypto.hash(:md5, secret <> Integer.to_string(index))
+
+  if leading == 0 do
+    IO.inspect(index)
+    nil
+  else
+    {index, index + 1}
+  end
+end)
+|> Stream.run()
+```

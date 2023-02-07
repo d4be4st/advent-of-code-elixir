@@ -1,0 +1,227 @@
+# Day 22
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+```elixir
+grid_input = Kino.Input.textarea("input")
+```
+
+```elixir
+movement_input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def build_grid(input) do
+    input
+    |> String.split("\n")
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {line, y}, grid ->
+      line
+      |> String.graphemes()
+      |> Enum.with_index()
+      |> Enum.reduce(grid, fn {char, x}, grid ->
+        case char do
+          "." ->
+            Map.put(grid, {x, y}, %{
+              value: :path,
+              north: {x, y - 1},
+              south: {x, y + 1},
+              east: {x + 1, y},
+              west: {x - 1, y}
+            })
+
+          "#" ->
+            Map.put(grid, {x, y}, %{
+              value: :wall,
+              north: {x, y - 1},
+              south: {x, y + 1},
+              east: {x + 1, y},
+              west: {x - 1, y}
+            })
+
+          " " ->
+            grid
+        end
+      end)
+    end)
+  end
+
+  def wrap_grid(grid) do
+    Enum.reduce(grid, grid, fn {coord, point}, grid ->
+      grid
+      |> check(:north, coord, point)
+      |> check(:south, coord, point)
+      |> check(:west, coord, point)
+      |> check(:east, coord, point)
+    end)
+  end
+
+  def check(grid, direction, {x, y}, point) do
+    case Map.get(grid, point[direction]) do
+      nil ->
+        case direction do
+          # find_max_in_column
+          :north ->
+            {{_, maxy}, _} =
+              Map.filter(grid, fn {{x1, _}, _} -> x1 == x end)
+              |> Enum.max_by(fn {{_, y1}, _} -> y1 end)
+
+            Map.update!(grid, {x, y}, fn m -> Map.put(m, :north, {x, maxy}) end)
+
+          # find_min_in_column
+          :south ->
+            {{_, miny}, _} =
+              Map.filter(grid, fn {{x1, _}, _} -> x1 == x end)
+              |> Enum.min_by(fn {{_, y1}, _} -> y1 end)
+
+            Map.update!(grid, {x, y}, fn m -> Map.put(m, :south, {x, miny}) end)
+
+          # find_max_in_row
+          :west ->
+            {{maxx, _}, _} =
+              Map.filter(grid, fn {{_, y1}, _} -> y1 == y end)
+              |> Enum.max_by(fn {{x1, _}, _} -> x1 end)
+
+            Map.update!(grid, {x, y}, fn m -> Map.put(m, :west, {maxx, y}) end)
+
+          # find_min_in_row
+          :east ->
+            {{minx, _}, _} =
+              Map.filter(grid, fn {{_, y1}, _} -> y1 == y end)
+              |> Enum.min_by(fn {{x1, _}, _} -> x1 end)
+
+            # if {x, y} == {99, 107}, do: IO.inspect()
+
+            Map.update!(grid, {x, y}, fn m -> Map.put(m, :east, {minx, y}) end)
+        end
+
+      _ ->
+        grid
+    end
+  end
+
+  def build_instructions(input) do
+    input
+    |> String.graphemes()
+    |> Enum.chunk_by(fn ch -> ch == "R" || ch == "L" end)
+    |> Enum.map(&Enum.join/1)
+  end
+end
+
+defmodule Part1 do
+  def run(grid, instructions) do
+    {start, _} =
+      grid
+      |> Map.filter(fn {{x, _}, _} -> x == 0 end)
+      |> Enum.min_by(fn {{_, y}, _} -> y end)
+
+    process(instructions, start, :east, grid)
+    |> score
+  end
+
+  def process([], coord, direction, _), do: {coord, direction}
+
+  def process([instruction | tail], coord, direction, grid) do
+    IO.inspect({instruction, coord, direction})
+
+    case instruction do
+      "R" ->
+        process(tail, coord, rotate_right(direction), grid)
+
+      "L" ->
+        process(tail, coord, rotate_left(direction), grid)
+
+      steps ->
+        coord = move(String.to_integer(steps), coord, direction, grid)
+        process(tail, coord, direction, grid)
+    end
+  end
+
+  def rotate_right(:north), do: :east
+  def rotate_right(:east), do: :south
+  def rotate_right(:south), do: :west
+  def rotate_right(:west), do: :north
+
+  def rotate_left(:north), do: :west
+  def rotate_left(:west), do: :south
+  def rotate_left(:south), do: :east
+  def rotate_left(:east), do: :north
+
+  def move(0, coord, _, _), do: coord
+
+  def move(times, coord, direction, grid) do
+    next_coord = Map.get(grid, coord)[direction]
+
+    case Map.get(grid, next_coord)[:value] do
+      :path -> move(times - 1, next_coord, direction, grid)
+      :wall -> coord
+    end
+  end
+
+  def score({{x, y}, direction}) do
+    1000 * (y + 1) +
+      4 * (x + 1) +
+      case direction do
+        :east -> 0
+        :south -> 1
+        :west -> 2
+        :north -> 3
+      end
+  end
+end
+
+grid =
+  "        ...#
+        .#..
+        #...
+        ....
+...#.......#
+........#...
+..#....#....
+..........#.
+        ...#....
+        .....#..
+        .#......
+        ......#."
+  |> Utils.build_grid()
+  |> Utils.wrap_grid()
+
+instructions =
+  "10R5L5R10L4R5L5"
+  |> Utils.build_instructions()
+
+Part1.run(grid, instructions)
+```
+
+## Part 01
+
+```elixir
+grid =
+  grid_input
+  |> Kino.Input.read()
+  |> Utils.build_grid()
+  |> Utils.wrap_grid()
+
+instructions = Utils.build_instructions(movement_input |> Kino.Input.read())
+
+# {"6", {96, 107}, :east}
+# Map.filter(grid, fn {{x, y}, _} -> y == 107 end)
+# |> Enum.min_max
+Part1.run(grid, instructions)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

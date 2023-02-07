@@ -1,0 +1,157 @@
+# Day 14
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Knot do
+  def process(list, [], index, skip_size), do: {list, index, skip_size}
+
+  def process(list, [length | lengths], index, skip_size) do
+    {sub_list, rest} =
+      list
+      |> rotate_left(index)
+      |> Enum.split(length)
+
+    sub_list
+    |> Enum.reverse(rest)
+    |> rotate_right(index)
+    |> process(lengths, rem(index + length + skip_size, Enum.count(list)), skip_size + 1)
+  end
+
+  def rotate_left(list, index) do
+    {l, r} = Enum.split(list, index)
+    r ++ l
+  end
+
+  def rotate_right(list, index) do
+    {l, r} = Enum.split(list, Enum.count(list) - index)
+    r ++ l
+  end
+
+  def hash(input) do
+    list = 0..255 |> Enum.to_list()
+
+    input = input ++ [17, 31, 73, 47, 23]
+
+    Enum.reduce(0..63, {list, 0, 0}, fn _, {list, index, skip_size} ->
+      Knot.process(list, input, index, skip_size)
+    end)
+    |> Kernel.elem(0)
+    |> Enum.chunk_every(16)
+    |> Enum.map(fn chunk ->
+      Enum.reduce(chunk, fn x, acc ->
+        Bitwise.bxor(acc, x)
+      end)
+    end)
+    |> Enum.map(&Integer.to_string(&1, 16))
+    |> Enum.map(&String.pad_leading(&1, 2, "0"))
+    |> Enum.join()
+    |> String.downcase()
+  end
+end
+
+defmodule Utils do
+  def grid(input) do
+    0..127
+    |> Enum.reduce(%{}, fn row, grid ->
+      "#{input}-#{row}"
+      |> String.to_charlist()
+      |> Knot.hash()
+      |> Base.decode16!(case: :lower)
+      |> to_bits()
+      |> Enum.with_index()
+      |> Enum.reduce(grid, fn {bit, column}, grid ->
+        Map.put(grid, {row, column}, bit)
+      end)
+    end)
+  end
+
+  def to_bits(hex) do
+    for <<bit::size(1) <- hex>>, do: bit
+  end
+
+  def draw(grid) do
+    Enum.each(0..7, fn y ->
+      Enum.each(0..7, fn x ->
+        if Map.get(grid, {y, x}) == 1, do: IO.write("#"), else: IO.write(".")
+      end)
+
+      IO.write("\n")
+    end)
+  end
+
+  def find_regions(grid, region_count) do
+    case Enum.find(grid, fn {_, v} -> v == 1 end) do
+      nil ->
+        region_count
+
+      {first_coord, _} ->
+        regions = search(:queue.from_list([first_coord]), grid, MapSet.new())
+
+        grid
+        |> Map.reject(fn {x, _} -> MapSet.member?(regions, x) end)
+        |> find_regions(region_count + 1)
+    end
+  end
+
+  def search({[], []}, _, traversed), do: traversed
+
+  def search(queue, grid, traversed) do
+    {{:value, coord}, queue} = :queue.out(queue)
+
+    if MapSet.member?(traversed, coord) do
+      search(queue, grid, traversed)
+    else
+      traversed = MapSet.put(traversed, coord)
+
+      coord
+      |> next_coords(grid)
+      |> Enum.reduce(queue, fn coord, queue -> :queue.in(coord, queue) end)
+      |> search(grid, traversed)
+    end
+  end
+
+  def next_coords({x, y}, grid) do
+    [
+      Map.get(grid, {x, y - 1}) == 1 && {x, y - 1},
+      Map.get(grid, {x, y + 1}) == 1 && {x, y + 1},
+      Map.get(grid, {x - 1, y}) == 1 && {x - 1, y},
+      Map.get(grid, {x + 1, y}) == 1 && {x + 1, y}
+    ]
+    |> Enum.filter(&(&1 != false))
+  end
+end
+```
+
+## Part 01
+
+```elixir
+"jxqlasbh"
+|> Utils.grid()
+|> Enum.filter(fn {_c, v} -> v == "1" end)
+|> Enum.count()
+```
+
+## Part 02
+
+```elixir
+grid =
+  "jxqlasbh"
+  |> Utils.grid()
+
+Utils.find_regions(grid, 0)
+```

@@ -1,0 +1,106 @@
+# Day 08
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def init_screen() do
+    for x <- 0..49,
+        y <- 0..5,
+        into: %{} do
+      {{x, y}, 0}
+    end
+  end
+
+  def instruction(screen, "rect " <> size) do
+    [w, h] = String.split(size, "x") |> Enum.map(&String.to_integer/1)
+
+    for x <- 0..(w - 1), y <- 0..(h - 1) do
+      {x, y}
+    end
+    |> Enum.reduce(screen, fn coord, acc -> Map.put(acc, coord, 1) end)
+  end
+
+  def instruction(screen, "rotate row y=" <> rest) do
+    [row, count] = String.split(rest, " by ") |> Enum.map(&String.to_integer/1)
+
+    for x <- 0..49 do
+      {x, row}
+    end
+    |> Enum.reduce(screen, fn {x, y}, acc ->
+      index = rem(x + count, 50)
+      Map.put(acc, {index, y}, Map.get(screen, {x, y}))
+    end)
+  end
+
+  def instruction(screen, "rotate column x=" <> rest) do
+    [column, count] = String.split(rest, " by ") |> Enum.map(&String.to_integer/1)
+
+    for y <- 0..5 do
+      {column, y}
+    end
+    |> Enum.reduce(screen, fn {x, y}, acc ->
+      index = rem(y + count, 6)
+      Map.put(acc, {x, index}, Map.get(screen, {x, y}))
+    end)
+  end
+
+  def print(screen) do
+    Enum.each(0..5, fn y ->
+      Enum.each(0..49, fn x ->
+        case screen[{x, y}] do
+          0 -> IO.write(".")
+          1 -> IO.write("#")
+        end
+      end)
+
+      IO.write("\n")
+    end)
+  end
+end
+
+# Utils.init_screen()
+# |> Utils.instruction("rect 3x3")
+# |> Utils.instruction("rotate column x=1 by 1")
+# |> Utils.instruction("rotate row y=0 by 4")
+# |> Utils.instruction("rotate column x=1 by 3")
+# |> Utils.print()
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(Utils.init_screen(), fn line, screen ->
+  Utils.instruction(screen, line)
+end)
+|> Enum.count(fn {_, v} -> v == 1 end)
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.reduce(Utils.init_screen(), fn line, screen ->
+  Utils.instruction(screen, line)
+end)
+|> Utils.print()
+```

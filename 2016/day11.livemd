@@ -1,0 +1,160 @@
+# Day 11
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+floors = %{
+  1 => Enum.sort([{"G", "promethium"}, {"M", "promethium"}]),
+  2 => Enum.sort([{"G", "cobalt"}, {"G", "curium"}, {"G", "ruthenium"}, {"G", "plutonium"}]),
+  3 => Enum.sort([{"M", "cobalt"}, {"M", "curium"}, {"M", "ruthenium"}, {"M", "plutonium"}]),
+  4 => [],
+  current_floor: 1,
+  steps: 0
+}
+
+# floors = %{
+#   1 => Enum.sort([{"M", "lithium"}, {"M", "hydrogen"}]),
+#   2 => Enum.sort([{"G", "hydrogen"}]),
+#   3 => Enum.sort([{"G", "lithium"}]),
+#   4 => [],
+#   current_floor: 1,
+#   steps: 0
+# }
+```
+
+```elixir
+
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def go(queue, traversed) do
+    {{:value, %{current_floor: current_floor, steps: steps} = floors}, queue} = :queue.out(queue)
+    # IO.inspect(floors[4])
+
+    # if steps == 3, do: throw(steps)
+
+    if finished?(floors) do
+      steps
+    else
+      next_traversed = MapSet.put(traversed, Map.take(floors, [1, 2, 3, 4, :current_floor]))
+      equipment = floors[current_floor]
+      possible_take = combinations(equipment, 2) ++ Enum.map(equipment, &[&1])
+
+      # queue = if floors[current_floor - 1] == [], do: [], else: queue
+      new_queue =
+        Enum.reduce(possible_take, queue, fn take, queue ->
+          next_floors(floors, current_floor)
+          |> Enum.reduce(queue, fn next_floor, queue ->
+            floors = update_floors(floors, current_floor, next_floor, take)
+
+            if valid_floors?(floors) do
+              if MapSet.member?(next_traversed, Map.take(floors, [1, 2, 3, 4, :current_floor])) do
+                queue
+              else
+                :queue.in(floors, queue)
+              end
+            else
+              queue
+            end
+          end)
+        end)
+
+      go(new_queue, next_traversed)
+    end
+  end
+
+  def update_floors(floors, current_floor, next_floor, take) do
+    floors
+    |> Map.update!(current_floor, fn floor -> Enum.sort(floor -- take) end)
+    |> Map.update!(next_floor, fn floor -> Enum.sort(floor ++ take) end)
+    |> Map.put(:current_floor, next_floor)
+    |> Map.update!(:steps, fn steps -> steps + 1 end)
+  end
+
+  def finished?(floors) do
+    floors[1] == [] && floors[2] == [] && floors[3] == []
+  end
+
+  def next_floors(floors, current_floor) do
+    cond do
+      floors[1] == [] && floors[2] == [] ->
+        cond do
+          current_floor == 3 -> [4]
+          current_floor == 4 -> [3]
+        end
+
+      floors[1] == [] ->
+        cond do
+          current_floor == 4 -> [3]
+          current_floor == 3 -> [2, 4]
+          current_floor == 2 -> [3]
+        end
+
+      current_floor < 4 && current_floor > 1 ->
+        [current_floor - 1, current_floor + 1]
+
+      current_floor == 1 ->
+        [current_floor + 1]
+
+      current_floor == 4 ->
+        [current_floor - 1]
+    end
+  end
+
+  def valid_floors?(floors) do
+    floors
+    |> Enum.filter(fn {k, _} -> is_number(k) end)
+    |> Enum.all?(fn {_index, floor} ->
+      valid_floor?(Enum.group_by(floor, fn {type, _} -> type end))
+    end)
+  end
+
+  def valid_floor?(%{"G" => generators, "M" => microchips}) do
+    connections =
+      microchips
+      |> Enum.map(fn {"M", microchip} ->
+        Enum.any?(generators, fn {"G", generator} -> generator == microchip end)
+      end)
+
+    Enum.all?(connections, &(&1 == true))
+  end
+
+  def valid_floor?(%{"M" => _}), do: true
+  def valid_floor?(%{"G" => _}), do: true
+  def valid_floor?(%{}), do: true
+
+  # combine array with itself to array of size k
+  def combinations(_, 0), do: [[]]
+  def combinations([], _), do: []
+
+  def combinations([x | xs], r) do
+    for(y <- combinations(xs, r - 1), do: [x | y]) ++ combinations(xs, r)
+  end
+end
+```
+
+## Part 01
+
+```elixir
+queue = :queue.new()
+queue = :queue.in(floors, queue)
+Utils.go(queue, MapSet.new())
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+```

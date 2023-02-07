@@ -1,0 +1,56 @@
+# Day 03
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+```
+
+## Input
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+## Shared
+
+```elixir
+defmodule Utils do
+  def valid?(triangle) do
+    [x, y, z] = triangle |> Enum.map(&String.to_integer/1)
+    x + y > z && x + z > y && y + z > x
+  end
+
+  def valid3?([[r1c1, r1c2, r1c3], [r2c1, r2c2, r2c3], [r3c1, r3c2, r3c3]]) do
+    [
+      Utils.valid?([r1c1, r2c1, r3c1]),
+      Utils.valid?([r1c2, r2c2, r3c2]),
+      Utils.valid?([r1c3, r2c3, r3c3])
+    ]
+  end
+end
+```
+
+## Part 01
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.map(&String.split(&1))
+|> Enum.count(&Utils.valid?(&1))
+```
+
+## Part 02
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.map(&String.split(&1))
+|> Enum.chunk_every(3)
+|> Enum.flat_map(&Utils.valid3?/1)
+|> Enum.count(&(&1 == true))
+```
